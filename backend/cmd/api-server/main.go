@@ -2,10 +2,11 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -15,11 +16,11 @@ import (
 var (
 	PLAID_CLIENT_ID                      = ""
 	PLAID_SECRET                         = ""
-	PLAID_ENV                            = "development"
+	PLAID_ENV                            = ""
 	PLAID_PRODUCTS                       = ""
 	PLAID_COUNTRY_CODES                  = ""
 	PLAID_REDIRECT_URI                   = ""
-	APP_PORT                             = "5001"
+	APP_PORT                             = ""
 	client              *plaid.APIClient = nil
 )
 
@@ -30,24 +31,142 @@ var environments = map[string]plaid.Environment{
 }
 
 func init() {
-	// Load .env file
-	err := godotenv.Load() // This will load your .env file by default
+	err := godotenv.Load()
 	if err != nil {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
 
-	CLIENT_ID := os.Getenv("CLIENT_ID")
-	SECRET := os.Getenv("SECRET")
+	PLAID_CLIENT_ID := os.Getenv("PLAID_CLIENT_ID")
+	PLAID_SECRET := os.Getenv("PLAID_SECRET")
+	PLAID_ENV = os.Getenv("PLAID_ENV")
+	PLAID_PRODUCTS = os.Getenv("PLAID_PRODUCTS")
+	PLAID_COUNTRY_CODES = os.Getenv("PLAID_COUNTRY_CODES")
+	PLAID_REDIRECT_URI = os.Getenv("PLAID_REDIRECT_URI")
+	APP_PORT = os.Getenv("APP_PORT")
 
 	// create Plaid client
 	configuration := plaid.NewConfiguration()
-	// configuration.AddDefaultHeader("PLAID-CLIENT-ID", PLAID_CLIENT_ID)
-	configuration.AddDefaultHeader("PLAID-CLIENT-ID", CLIENT_ID)
-	configuration.AddDefaultHeader("PLAID-SECRET", SECRET)
+	configuration.AddDefaultHeader("PLAID-CLIENT-ID", PLAID_CLIENT_ID)
+	configuration.AddDefaultHeader("PLAID-SECRET", PLAID_SECRET)
 	configuration.UseEnvironment(environments[PLAID_ENV])
 	client = plaid.NewAPIClient(configuration)
 }
 
+func main() {
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.Default()
+
+	// CORS
+	r.Use(CORSMiddleware())
+
+	// routes
+	r.POST("/api/create_link_token", createLinkToken)
+
+	err := r.Run(":" + APP_PORT)
+	if err != nil {
+		panic("unable to start server")
+	}
+}
+
+func createLinkToken(c *gin.Context) {
+	linkToken, err := linkTokenCreate(nil)
+	if err != nil {
+		renderError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"link_token": linkToken})
+}
+
+func linkTokenCreate(paymentInitiation *plaid.LinkTokenCreateRequestPaymentInitiation) (string, error) {
+	ctx := context.Background()
+
+	// Institutions from all listed countries will be shown.
+	countryCodes := convertCountryCodes(strings.Split(PLAID_COUNTRY_CODES, ","))
+	redirectURI := PLAID_REDIRECT_URI
+
+	// This should correspond to a unique id for the current user.
+	// Typically, this will be a user ID number from your application.
+	// Personally identifiable information, such as an email address or phone number, should not be used here.
+	user := plaid.LinkTokenCreateRequestUser{
+		ClientUserId: time.Now().String(),
+	}
+
+	request := plaid.NewLinkTokenCreateRequest(
+		"Balance Tracker App",
+		"en",
+		countryCodes,
+		user,
+	)
+
+	products := convertProducts(strings.Split(PLAID_PRODUCTS, ","))
+	if paymentInitiation != nil {
+		request.SetPaymentInitiation(*paymentInitiation)
+		// The 'payment_initiation' product has to be the only element in the 'products' list.
+		request.SetProducts([]plaid.Products{plaid.PRODUCTS_PAYMENT_INITIATION})
+	} else {
+		request.SetProducts(products)
+	}
+
+	if containsProduct(products, plaid.PRODUCTS_STATEMENTS) {
+		statementConfig := plaid.NewLinkTokenCreateRequestStatements()
+		statementConfig.SetStartDate(time.Now().Local().Add(-30 * 24 * time.Hour).Format("2006-01-02"))
+		statementConfig.SetEndDate(time.Now().Local().Format("2006-01-02"))
+		request.SetStatements(*statementConfig)
+	}
+
+	if redirectURI != "" {
+		request.SetRedirectUri(redirectURI)
+	}
+
+	linkTokenCreateResp, _, err := client.PlaidApi.LinkTokenCreate(ctx).LinkTokenCreateRequest(*request).Execute()
+
+	if err != nil {
+		return "", err
+	}
+
+	return linkTokenCreateResp.GetLinkToken(), nil
+}
+
+func convertCountryCodes(countryCodeStrs []string) []plaid.CountryCode {
+	countryCodes := []plaid.CountryCode{}
+
+	for _, countryCodeStr := range countryCodeStrs {
+		countryCodes = append(countryCodes, plaid.CountryCode(countryCodeStr))
+	}
+
+	return countryCodes
+}
+
+func convertProducts(productStrs []string) []plaid.Products {
+	products := []plaid.Products{}
+
+	for _, productStr := range productStrs {
+		products = append(products, plaid.Products(productStr))
+	}
+
+	return products
+}
+
+func containsProduct(products []plaid.Products, product plaid.Products) bool {
+	for _, p := range products {
+		if p == product {
+			return true
+		}
+	}
+	return false
+}
+
+func renderError(c *gin.Context, originalErr error) {
+	if plaidError, err := plaid.ToPlaidError(originalErr); err == nil {
+		// Return 200 and allow the front end to render the error.
+		c.JSON(http.StatusOK, gin.H{"error": plaidError})
+		return
+	}
+
+	c.JSON(http.StatusInternalServerError, gin.H{"error": originalErr.Error()})
+}
+
+// need to update in the future to not accept `*`
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -64,71 +183,29 @@ func CORSMiddleware() gin.HandlerFunc {
 	}
 }
 
-func createLinkToken(c *gin.Context) {
-	// cookie := &http.Cookie{
-	// 	Name:     "example",
-	// 	Value:    "test",
-	// 	MaxAge:   3600,
-	// 	Secure:   true, // Secure should be true if your site uses HTTPS
-	// 	HttpOnly: true,
-	// 	SameSite: http.SameSiteLaxMode, // Can be set to http.SameSiteStrictMode as needed
-	// }
-	// http.SetCookie(c.Writer, cookie)
-	// c.JSON(http.StatusOK, gin.H{
-	// 	"message": "Cookieset",
-	// })
+// func createLinkTokenLegacy(c *gin.Context) {
+// 	ctx := context.Background()
 
-	ctx := context.Background()
+// 	// Get the client_user_id by searching for the current user
+// 	PLAID_CLIENT_ID := os.Getenv("PLAID_CLIENT_ID")
+// 	// user, _ := usermodels.Find(...)
+// 	// clientUserId := user.ID.String()
+// 	clientUserId := string(PLAID_CLIENT_ID)
 
-	// Get the client_user_id by searching for the current user
-	CLIENT_ID := os.Getenv("CLIENT_ID")
-	// user, _ := usermodels.Find(...)
-	// clientUserId := user.ID.String()
-	clientUserId := string(CLIENT_ID)
+// 	// Create a link_token for the given user
+// 	request := plaid.NewLinkTokenCreateRequest("testing app - Mick", "en", []plaid.CountryCode{plaid.COUNTRYCODE_US}, *plaid.NewLinkTokenCreateRequestUser(clientUserId))
+// 	request.SetWebhook("https://localhost:3000/balances")
+// 	request.SetRedirectUri("https://localhost:3000/balances")
+// 	request.SetProducts([]plaid.Products{plaid.PRODUCTS_BALANCE})
 
-	// Create a link_token for the given user
-	request := plaid.NewLinkTokenCreateRequest("testing app - Mick", "en", []plaid.CountryCode{plaid.COUNTRYCODE_US}, *plaid.NewLinkTokenCreateRequestUser(clientUserId))
-	// request.SetWebhook("https://webhook.sample.com")
-	// request.SetRedirectUri("https://domainname.com/oauth-page.html")
-	request.SetProducts([]plaid.Products{plaid.PRODUCTS_BALANCE})
-
-	resp, _, err := client.PlaidApi.LinkTokenCreate(ctx).LinkTokenCreateRequest(*request).Execute()
-	if err != nil {
-		fmt.Println(err)
-	}
-	// resp, _, err := testClient.PlaidApi.LinkTokenCreate(ctx).LinkTokenCreateRequest(*request).Execute()
-
-	// Send the data to the client
-	c.JSON(http.StatusOK, gin.H{
-		"link_token": resp.GetLinkToken(),
-	})
-}
-
-// func createLinkToken(c *gin.Context) {
-// 	linkToken, err := linkTokenCreate(nil)
+// 	resp, _, err := client.PlaidApi.LinkTokenCreate(ctx).LinkTokenCreateRequest(*request).Execute()
 // 	if err != nil {
-// 		renderError(c, err)
-// 		return
+// 		fmt.Println(err)
 // 	}
-// 	c.JSON(http.StatusOK, gin.H{"link_token": linkToken})
+// 	// resp, _, err := testClient.PlaidApi.LinkTokenCreate(ctx).LinkTokenCreateRequest(*request).Execute()
+
+// 	// Send the data to the client
+// 	c.JSON(http.StatusOK, gin.H{
+// 		"link_token": resp.GetLinkToken(),
+// 	})
 // }
-
-// const response = await fetch('/api/create_link_token', {
-
-func main() {
-
-	// Access environment variables
-	// dbHost := os.Getenv("CLIENT_ID")
-	// fmt.Println("dbHost", dbHost)
-
-	r := gin.Default()
-	r.Use(CORSMiddleware())
-
-	// r.POST("/api/info", info)
-	r.POST("/api/create_link_token", createLinkToken)
-
-	err := r.Run(":" + APP_PORT)
-	if err != nil {
-		panic("unable to start server")
-	}
-}
