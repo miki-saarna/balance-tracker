@@ -1,0 +1,14 @@
+CREATE TABLE items {
+  id INT PRIMARY KEY,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+}
+
+CREATE TABLE accounts {
+  id PRIMARY KEY,
+  item_id INT,
+  account_name VARCHAR(255) NOT NULL,
+  account_type VARCHAR(255) NOT NULL,
+  balance DECIMAL(12, 2) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (item_id) REFERENCES items(id)
+}
