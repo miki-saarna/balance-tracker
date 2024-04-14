@@ -30,6 +30,10 @@ var environments = map[string]plaid.Environment{
 	"production":  plaid.Production,
 }
 
+// We store the access_token in memory - in production, store it in a secure, persistent data store.
+var accessToken string
+var itemID string
+
 func init() {
 	err := godotenv.Load()
 	if err != nil {
@@ -52,6 +56,23 @@ func init() {
 	client = plaid.NewAPIClient(configuration)
 }
 
+// need to update in the future to not accept `*`
+func CORSMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	}
+}
+
 func main() {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
@@ -61,6 +82,8 @@ func main() {
 
 	// routes
 	r.POST("/api/create_link_token", createLinkToken)
+	r.POST("/api/set_access_token", getAccessToken)
+	r.GET("/api/balance", balance)
 
 	err := r.Run(":" + APP_PORT)
 	if err != nil {
@@ -127,6 +150,57 @@ func linkTokenCreate(paymentInitiation *plaid.LinkTokenCreateRequestPaymentIniti
 	return linkTokenCreateResp.GetLinkToken(), nil
 }
 
+type TokenRequest struct {
+	PublicToken string `json:"public_token"`
+}
+
+func getAccessToken(c *gin.Context) {
+	var tokenRequest TokenRequest
+	if err := c.BindJSON(&tokenRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	publicToken := tokenRequest.PublicToken
+	// publicToken := c.PostForm("public_token")
+
+	ctx := context.Background()
+
+	// exchange the public_token for an access_token
+	exchangePublicTokenResp, _, err := client.PlaidApi.ItemPublicTokenExchange(ctx).ItemPublicTokenExchangeRequest(
+		*plaid.NewItemPublicTokenExchangeRequest(publicToken),
+	).Execute()
+	if err != nil {
+		renderError(c, err)
+		return
+	}
+
+	accessToken = exchangePublicTokenResp.GetAccessToken()
+	itemID = exchangePublicTokenResp.GetItemId()
+
+	c.JSON(http.StatusOK, gin.H{
+		"access_token": accessToken,
+		"item_id":      itemID,
+	})
+}
+
+func balance(c *gin.Context) {
+	ctx := context.Background()
+
+	balancesGetResp, _, err := client.PlaidApi.AccountsBalanceGet(ctx).AccountsBalanceGetRequest(
+		*plaid.NewAccountsBalanceGetRequest(accessToken),
+	).Execute()
+
+	if err != nil {
+		renderError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"accounts": balancesGetResp.GetAccounts(),
+	})
+}
+
 func convertCountryCodes(countryCodeStrs []string) []plaid.CountryCode {
 	countryCodes := []plaid.CountryCode{}
 
@@ -165,47 +239,3 @@ func renderError(c *gin.Context, originalErr error) {
 
 	c.JSON(http.StatusInternalServerError, gin.H{"error": originalErr.Error()})
 }
-
-// need to update in the future to not accept `*`
-func CORSMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
-
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
-			return
-		}
-
-		c.Next()
-	}
-}
-
-// func createLinkTokenLegacy(c *gin.Context) {
-// 	ctx := context.Background()
-
-// 	// Get the client_user_id by searching for the current user
-// 	PLAID_CLIENT_ID := os.Getenv("PLAID_CLIENT_ID")
-// 	// user, _ := usermodels.Find(...)
-// 	// clientUserId := user.ID.String()
-// 	clientUserId := string(PLAID_CLIENT_ID)
-
-// 	// Create a link_token for the given user
-// 	request := plaid.NewLinkTokenCreateRequest("testing app - Mick", "en", []plaid.CountryCode{plaid.COUNTRYCODE_US}, *plaid.NewLinkTokenCreateRequestUser(clientUserId))
-// 	request.SetWebhook("https://localhost:3000/balances")
-// 	request.SetRedirectUri("https://localhost:3000/balances")
-// 	request.SetProducts([]plaid.Products{plaid.PRODUCTS_BALANCE})
-
-// 	resp, _, err := client.PlaidApi.LinkTokenCreate(ctx).LinkTokenCreateRequest(*request).Execute()
-// 	if err != nil {
-// 		fmt.Println(err)
-// 	}
-// 	// resp, _, err := testClient.PlaidApi.LinkTokenCreate(ctx).LinkTokenCreateRequest(*request).Execute()
-
-// 	// Send the data to the client
-// 	c.JSON(http.StatusOK, gin.H{
-// 		"link_token": resp.GetLinkToken(),
-// 	})
-// }
