@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -11,6 +13,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	plaid "github.com/plaid/plaid-go/v21/plaid"
+
+	_ "github.com/lib/pq"
 )
 
 var (
@@ -22,6 +26,11 @@ var (
 	PLAID_REDIRECT_URI                   = ""
 	APP_PORT                             = ""
 	client              *plaid.APIClient = nil
+	// RDS_USERNAME                         = ""
+	// RDS_PASSWORD                         = ""
+	DB_USER            = ""
+	DB_NAME            = ""
+	DB_MASTER_PASSWORD = ""
 )
 
 var environments = map[string]plaid.Environment{
@@ -48,12 +57,18 @@ func init() {
 	PLAID_REDIRECT_URI = os.Getenv("PLAID_REDIRECT_URI")
 	APP_PORT = os.Getenv("APP_PORT")
 
+	// RDS_USERNAME = os.Getenv("RDS_USERNAME")
+	// RDS_PASSWORD = os.Getenv("RDS_PASSWORD")
+
 	// create Plaid client
 	configuration := plaid.NewConfiguration()
 	configuration.AddDefaultHeader("PLAID-CLIENT-ID", PLAID_CLIENT_ID)
 	configuration.AddDefaultHeader("PLAID-SECRET", PLAID_SECRET)
 	configuration.UseEnvironment(environments[PLAID_ENV])
 	client = plaid.NewAPIClient(configuration)
+
+	// connectRdsDb()
+	connectDB()
 }
 
 // need to update in the future to not accept `*`
@@ -72,6 +87,106 @@ func CORSMiddleware() gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+func connectDB() {
+	DB_USER := os.Getenv("DB_USER")
+	DB_NAME := os.Getenv("DB_NAME")
+	DB_MASTER_PASSWORD := os.Getenv("DB_MASTER_PASSWORD")
+
+	var dbHost string = "localhost"
+	var dbPort int = 5432
+	var dbUser string = DB_USER
+	var dbName string = DB_NAME
+	var dbPassword string = DB_MASTER_PASSWORD
+
+	psqlInfo := fmt.Sprintf(
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+		dbHost, dbPort, dbUser, dbPassword, dbName,
+	)
+
+	db, err := sql.Open("postgres", psqlInfo)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+	fmt.Println(db)
+
+	// fmt.Println("db", db)
+
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Successfully connected!")
+
+	genTables(db)
+}
+
+func genTables(db *sql.DB) {
+	// Read SQL from file
+	sqlBytes, err := os.ReadFile("db/migrations/migrations.sql")
+	if err != nil {
+		log.Fatalf("Error reading SQL file: %v", err)
+	}
+	sqlString := string(sqlBytes)
+	// fmt.Println("sqlString", sqlString)
+
+	// Execute SQL from file
+	_, err = db.Exec(sqlString)
+	if err != nil {
+		log.Fatalf("Error executing SQL query: %v", err)
+	}
+
+	fmt.Println("SQL executed successfully")
+}
+
+// func connectRdsDb() {
+// 	// const (
+// 	// 	host     = "balance-tracker-development.c3y0c0ku8eoe.us-east-2.rds.amazonaws.com"
+// 	// 	port     = 5432
+// 	// 	user     = RDS_USERNAME
+// 	// 	password = RDS_PASSWORD
+// 	// 	dbname   = "balance-tracker-development"
+// 	// )
+
+// 	var dbName string = ""
+// 	var dbUser string = RDS_USERNAME
+// 	var dbHost string = "balance-tracker-development-v3.c3y0c0ku8eoe.us-east-2.rds.amazonaws.com"
+// 	var dbPort int = 5432
+// 	var dbEndpoint string = fmt.Sprintf("%s:%d", dbHost, dbPort)
+// 	var region string = "us-east-2"
+// 	// var region string = "us-east-1"
+
+// 	cfg, err := config.LoadDefaultConfig(context.TODO())
+// 	if err != nil {
+// 		panic("configuration error: " + err.Error())
+// 	}
+
+// 	authenticationToken, err := auth.BuildAuthToken(context.TODO(), dbEndpoint, region, dbUser, cfg.Credentials)
+
+// 	if err != nil {
+// 		panic("failed to create authentication token: " + err.Error())
+// 	}
+
+// 	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s",
+// 		dbHost, dbPort, dbUser, authenticationToken, dbName,
+// 	)
+
+// 	db, err := sql.Open("postgres", dsn)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+
+// 	fmt.Println("db", db)
+
+// 	fmt.Println("init ping")
+// 	err = db.Ping()
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	fmt.Println("pinged!")
+// }
 
 func main() {
 	gin.SetMode(gin.ReleaseMode)
