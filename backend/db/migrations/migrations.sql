@@ -1,11 +1,13 @@
-CREATE TABLE items (
-  id INT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS items (
+  id VARCHAR(255) PRIMARY KEY,
+  access_token VARCHAR(255),
+
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE accounts (
+CREATE TABLE IF NOT EXISTS accounts (
   id INT PRIMARY KEY,
-  item_id INT,
+  item_id VARCHAR(255),
   account_name VARCHAR(255) NOT NULL,
   account_type VARCHAR(255) NOT NULL,
   balance DECIMAL(12, 2) NOT NULL,
