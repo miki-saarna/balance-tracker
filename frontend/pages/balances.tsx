@@ -3,12 +3,22 @@
 // obtain a link token to be used in the Link component
 import React, { useEffect, useState } from 'react';
 import { usePlaidLink } from 'react-plaid-link';
+import { AccessTokensResponse, getAccessTokens } from '../utils/db';
 
 const App = () => {
   const [linkToken, setLinkToken] = useState(null);
   const [accessToken, setAccessToken] = useState(null);
+  const [accessTokens, setAccessTokens] = useState<string[]>([]);
 
   useEffect(() => {
+    (async () => {
+      const data: AccessTokensResponse | void = await getAccessTokens();
+      if (data) {
+        setAccessTokens(data.access_tokens)
+      } else {
+        console.log("There was an error retrieving access_tokens")
+      }
+    })()
     generateToken();
   }, []);
 
@@ -29,6 +39,7 @@ const App = () => {
           accessToken != null &&
           <Balance accessToken={accessToken} />
         }
+        {accessTokens.map((accessToken) => <Balance key={accessToken} accessToken={accessToken} />)}
       </>
   )
 };
@@ -80,17 +91,18 @@ const Balance: React.FC<BalanceProps> = (props: BalanceProps) => {
     getBalances();
   }, []);
 
+  // pass in access_token
   const getBalances = async () => {
     const response = await fetch('http://localhost:8000/api/balance', {
-      method: 'GET',
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: null,
+      body: JSON.stringify({ accessToken: props.accessToken }),
     });
     const data = await response.json();
     console.log(data)
-    setAccounts(data.accounts)
+    setAccounts(accounts.concat(data.accounts))
   }
 
   return (
