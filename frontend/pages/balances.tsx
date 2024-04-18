@@ -4,32 +4,34 @@
 import React, { useEffect, useState } from 'react';
 import { usePlaidLink } from 'react-plaid-link';
 import { AccessTokensResponse, getAccessTokens } from '../utils/db';
+import { LinkTokenResponse, generateLinkToken } from '../utils/plaid_api';
 
 const App = () => {
-  const [linkToken, setLinkToken] = useState(null);
+  const [linkToken, setLinkToken] = useState("");
   const [accessToken, setAccessToken] = useState(null);
   const [accessTokens, setAccessTokens] = useState<string[]>([]);
 
   useEffect(() => {
     (async () => {
-      const data: AccessTokensResponse | void = await getAccessTokens();
-      if (data) {
-        setAccessTokens(data.access_tokens)
-      } else {
-        console.log("There was an error retrieving access_tokens")
+      try {
+        const data: AccessTokensResponse | void = await getAccessTokens();
+        if (data) {
+          setAccessTokens(data.access_tokens)
+        }
+      } catch (err) {
+        console.log("There was an error retrieving access_tokens:", err)
+      }
+
+      try {
+        const data: LinkTokenResponse | void = await generateLinkToken();
+        if (data) {
+          setLinkToken(data.link_token)
+        }
+      } catch (err) {
+        console.log("There was an error retrieving the link_token:", err)
       }
     })()
-    generateToken();
   }, []);
-
-  const generateToken = async () => {
-    const response = await fetch('http://localhost:8000/api/create_link_token', {
-      method: 'POST',
-    });
-    const data = await response.json();
-    console.log(data)
-    setLinkToken(data.link_token);
-  };
 
   return (
     linkToken != null &&
