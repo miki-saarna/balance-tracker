@@ -11,7 +11,7 @@ import {
   getAccountsBalances
 } from '../utils/plaid_api';
 
-const App = () => {
+const Balances = () => {
   const [linkToken, setLinkToken] = useState("");
   const [accessToken, setAccessToken] = useState(null);
   const [accessTokens, setAccessTokens] = useState<string[]>([]);
@@ -85,4 +85,4 @@ const Balance: React.FC<BalanceProps> = (props: BalanceProps) => {
   )
 }
 
-export default App;
+export default Balances;
