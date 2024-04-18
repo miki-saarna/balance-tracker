@@ -68,7 +68,9 @@ func init() {
 	client = plaid.NewAPIClient(configuration)
 
 	// connectRdsDb()
-	connectDB()
+	db := connectDB()
+	genTables(db)
+	db.Close()
 }
 
 // need to update in the future to not accept `*`
@@ -88,7 +90,7 @@ func CORSMiddleware() gin.HandlerFunc {
 	}
 }
 
-func connectDB() {
+func connectDB() *sql.DB {
 	DB_USER := os.Getenv("DB_USER")
 	DB_NAME := os.Getenv("DB_NAME")
 	DB_MASTER_PASSWORD := os.Getenv("DB_MASTER_PASSWORD")
@@ -108,10 +110,8 @@ func connectDB() {
 	if err != nil {
 		panic(err)
 	}
-	defer db.Close()
+	// defer db.Close()
 	fmt.Println(db)
-
-	// fmt.Println("db", db)
 
 	err = db.Ping()
 	if err != nil {
@@ -119,8 +119,7 @@ func connectDB() {
 	}
 
 	fmt.Println("Successfully connected!")
-
-	genTables(db)
+	return db
 }
 
 func genTables(db *sql.DB) {
@@ -293,10 +292,29 @@ func getAccessToken(c *gin.Context) {
 	accessToken = exchangePublicTokenResp.GetAccessToken()
 	itemID = exchangePublicTokenResp.GetItemId()
 
+	db := connectDB()
+	saveAccessToken(db, &itemID, &accessToken)
+	db.Close()
+
 	c.JSON(http.StatusOK, gin.H{
 		"access_token": accessToken,
 		"item_id":      itemID,
 	})
+}
+
+func saveAccessToken(db *sql.DB, itemId *string, accessToken *string) {
+	sqlBytes, err := os.ReadFile("db/sql/saveAccessToken.sql")
+	if err != nil {
+		log.Fatalf("Error reading SQL file: %v", err)
+	}
+	sqlString := string(sqlBytes)
+
+	_, err = db.Exec(sqlString, itemId, accessToken)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println("Insertion successful")
 }
 
 func balance(c *gin.Context) {
