@@ -2,9 +2,14 @@
 // Upon rendering of App component, make a request to create and
 // obtain a link token to be used in the Link component
 import React, { useEffect, useState } from 'react';
-import { usePlaidLink } from 'react-plaid-link';
 import { AccessTokensResponse, getAccessTokens } from '../utils/db';
-import { LinkTokenResponse, generateLinkToken } from '../utils/plaid_api';
+import {
+  LinkTokenResponse,
+  generateLinkToken,
+  Link,
+  AccountsBalancesResponse,
+  getAccountsBalances
+} from '../utils/plaid_api';
 
 const App = () => {
   const [linkToken, setLinkToken] = useState("");
@@ -46,66 +51,21 @@ const App = () => {
   )
 };
 
-// LINK COMPONENT
-// Use Plaid Link and pass link token and onSuccess function
-// in configuration to initialize Plaid Link
-interface LinkProps {
-  linkToken: string | null;
-  setAccessToken: Function
-}
-
 interface BalanceProps {
   accessToken: string | null
-}
-
-const Link: React.FC<LinkProps> = (props: LinkProps) => {
-  const onSuccess = React.useCallback(async (public_token, metadata) => {
-    const response = await fetch('http://localhost:8000/api/set_access_token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ public_token }),
-    });
-    const data = await response.json();
-    console.log(data) // {access_token, item_id}
-    props.setAccessToken(data.access_token)
-  }, []);
-
-  const config: Parameters<typeof usePlaidLink>[0] = {
-    token: props.linkToken!,
-    onSuccess,
-  };
-
-  const { open, ready } = usePlaidLink(config);
-  
-  return (
-    <button onClick={() => open()} disabled={!ready}>
-      Link account
-    </button>
-  )
 }
 
 const Balance: React.FC<BalanceProps> = (props: BalanceProps) => {
   const [accounts, setAccounts] = useState<any[]>([]);
 
   useEffect(() => {
-    getBalances();
+    (async() => {
+      const data: AccountsBalancesResponse | void = await getAccountsBalances(props.accessToken as string)
+      if (data) {
+        setAccounts(accounts.concat(data.accounts))
+      }
+    })()
   }, []);
-
-  // pass in access_token
-  const getBalances = async () => {
-    const response = await fetch('http://localhost:8000/api/balance', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ accessToken: props.accessToken }),
-    });
-    const data = await response.json();
-    console.log(data)
-    setAccounts(accounts.concat(data.accounts))
-  }
 
   return (
     <>
