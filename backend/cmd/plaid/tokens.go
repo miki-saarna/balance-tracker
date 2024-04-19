@@ -45,16 +45,13 @@ func init() {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
 
-	PLAID_CLIENT_ID := os.Getenv("PLAID_CLIENT_ID")
-	PLAID_SECRET := os.Getenv("PLAID_SECRET")
+	PLAID_CLIENT_ID = os.Getenv("PLAID_CLIENT_ID")
+	PLAID_SECRET = os.Getenv("PLAID_SECRET")
 	PLAID_ENV = os.Getenv("PLAID_ENV")
 	PLAID_PRODUCTS = os.Getenv("PLAID_PRODUCTS")
 	PLAID_COUNTRY_CODES = os.Getenv("PLAID_COUNTRY_CODES")
 	PLAID_REDIRECT_URI = os.Getenv("PLAID_REDIRECT_URI")
 	APP_PORT = os.Getenv("APP_PORT")
-
-	// RDS_USERNAME = os.Getenv("RDS_USERNAME")
-	// RDS_PASSWORD = os.Getenv("RDS_PASSWORD")
 
 	// create Plaid client
 	configuration := plaid.NewConfiguration()
