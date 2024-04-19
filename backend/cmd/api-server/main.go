@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	database "github.com/miki-saarna/balance-tracker/utils"
+
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	plaid "github.com/plaid/plaid-go/v21/plaid"
@@ -68,7 +70,7 @@ func init() {
 	client = plaid.NewAPIClient(configuration)
 
 	// connectRdsDb()
-	db := connectDB()
+	db := database.ConnectDB()
 	genTables(db)
 	db.Close()
 }
