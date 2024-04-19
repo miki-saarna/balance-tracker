@@ -8,6 +8,7 @@ import (
 	"os"
 
 	tokens "github.com/miki-saarna/balance-tracker/cmd/plaid"
+	sqlCmd "github.com/miki-saarna/balance-tracker/cmd/sql"
 	utils "github.com/miki-saarna/balance-tracker/utils"
 
 	"github.com/gin-gonic/gin"
@@ -96,7 +97,7 @@ func main() {
 	// routes
 	r.POST("/api/create_link_token", createLinkToken)
 	r.POST("/api/set_access_token", tokens.GetAccessToken)
-	r.GET("/api/get_access_tokens", getAccessTokens)
+	r.GET("/api/get_access_tokens", sqlCmd.GetAccessTokens)
 	r.POST("/api/balance", balance)
 
 	err := r.Run(":" + APP_PORT)
@@ -120,45 +121,6 @@ type TokenRequest struct {
 
 type AccessTokensRequest struct {
 	AccessTokens string `json:"public_token"`
-}
-
-func getAccessTokens(c *gin.Context) {
-	var accessTokens []string
-
-	sqlBytes, err := os.ReadFile("db/sql/getAccessTokens.sql")
-	if err != nil {
-		log.Fatalf("Error reading SQL file: %v", err)
-	}
-	sqlString := string(sqlBytes)
-
-	db := utils.ConnectDB()
-	defer db.Close()
-
-	// rows, err := db.Query("SELECT access_token FROM items")
-	rows, err := db.Query(sqlString)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer rows.Close()
-
-	for rows.Next() {
-		var accessToken string
-		err := rows.Scan(&accessToken)
-		if err != nil {
-			log.Fatal(err)
-		}
-		accessTokens = append(accessTokens, accessToken)
-	}
-
-	err = rows.Err()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"access_tokens": accessTokens,
-	})
 }
 
 type AccessTokenRequest struct {
