@@ -1,13 +1,12 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 
-	tokens "github.com/miki-saarna/balance-tracker/cmd/plaid"
+	plaidFuncs "github.com/miki-saarna/balance-tracker/cmd/plaid"
 	sqlCmd "github.com/miki-saarna/balance-tracker/cmd/sql"
 	utils "github.com/miki-saarna/balance-tracker/utils"
 
@@ -96,9 +95,9 @@ func main() {
 
 	// routes
 	r.POST("/api/create_link_token", createLinkToken)
-	r.POST("/api/set_access_token", tokens.GetAccessToken)
+	r.POST("/api/set_access_token", plaidFuncs.GetAccessToken)
 	r.GET("/api/get_access_tokens", sqlCmd.GetAccessTokens)
-	r.POST("/api/balance", balance)
+	r.POST("/api/balance", plaidFuncs.Balance)
 
 	err := r.Run(":" + APP_PORT)
 	if err != nil {
@@ -107,39 +106,10 @@ func main() {
 }
 
 func createLinkToken(c *gin.Context) {
-	linkToken, err := tokens.LinkTokenCreate(nil)
+	linkToken, err := plaidFuncs.LinkTokenCreate(nil)
 	if err != nil {
 		utils.RenderError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"link_token": linkToken})
-}
-
-type AccessTokenRequest struct {
-	AccessToken string `json:"access_token"`
-}
-
-func balance(c *gin.Context) {
-	var accessTokenRequest AccessTokenRequest
-	if err := c.BindJSON(&accessTokenRequest); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	accessToken := accessTokenRequest.AccessToken
-
-	ctx := context.Background()
-
-	balancesGetResp, _, err := client.PlaidApi.AccountsBalanceGet(ctx).AccountsBalanceGetRequest(
-		*plaid.NewAccountsBalanceGetRequest(accessToken),
-	).Execute()
-
-	if err != nil {
-		utils.RenderError(c, err)
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"accounts": balancesGetResp.GetAccounts(),
-	})
 }
