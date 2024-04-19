@@ -65,13 +65,10 @@ func init() {
 	configuration.UseEnvironment(environments[PLAID_ENV])
 	client = plaid.NewAPIClient(configuration)
 
-	// connectRdsDb()
-	db := utils.ConnectDB()
-	genTables(db)
-	db.Close()
+	genTables()
 }
 
-func genTables(db *sql.DB) {
+func genTables() {
 	// Read SQL from file
 	sqlBytes, err := os.ReadFile("db/migrations/migrations.sql")
 	if err != nil {
@@ -80,6 +77,8 @@ func genTables(db *sql.DB) {
 	sqlString := string(sqlBytes)
 	// fmt.Println("sqlString", sqlString)
 
+	db := utils.ConnectDB()
+	defer db.Close()
 	// Execute SQL from file
 	_, err = db.Exec(sqlString)
 	if err != nil {
