@@ -41,10 +41,6 @@ var environments = map[string]plaid.Environment{
 	"production":  plaid.Production,
 }
 
-// We store the access_token in memory - in production, store it in a secure, persistent data store.
-var accessToken string
-var itemID string
-
 func init() {
 	err := godotenv.Load()
 	if err != nil {
@@ -199,7 +195,8 @@ func main() {
 	// routes
 	r.POST("/api/create_link_token", createLinkToken)
 	r.POST("/api/set_access_token", getAccessToken)
-	r.GET("/api/balance", balance)
+	r.GET("/api/get_access_tokens", getAccessTokens)
+	r.POST("/api/balance", balance)
 
 	err := r.Run(":" + APP_PORT)
 	if err != nil {
@@ -291,8 +288,8 @@ func getAccessToken(c *gin.Context) {
 		return
 	}
 
-	accessToken = exchangePublicTokenResp.GetAccessToken()
-	itemID = exchangePublicTokenResp.GetItemId()
+	accessToken := exchangePublicTokenResp.GetAccessToken()
+	itemID := exchangePublicTokenResp.GetItemId()
 
 	db := connectDB()
 	saveAccessToken(db, &itemID, &accessToken)
@@ -301,6 +298,49 @@ func getAccessToken(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"access_token": accessToken,
 		"item_id":      itemID,
+	})
+}
+
+type AccessTokensRequest struct {
+	AccessTokens string `json:"public_token"`
+}
+
+func getAccessTokens(c *gin.Context) {
+	var accessTokens []string
+
+	sqlBytes, err := os.ReadFile("db/sql/getAccessTokens.sql")
+	if err != nil {
+		log.Fatalf("Error reading SQL file: %v", err)
+	}
+	sqlString := string(sqlBytes)
+
+	db := database.ConnectDB()
+	defer db.Close()
+
+	// rows, err := db.Query("SELECT access_token FROM items")
+	rows, err := db.Query(sqlString)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var accessToken string
+		err := rows.Scan(&accessToken)
+		if err != nil {
+			log.Fatal(err)
+		}
+		accessTokens = append(accessTokens, accessToken)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"access_tokens": accessTokens,
 	})
 }
 
@@ -319,7 +359,19 @@ func saveAccessToken(db *sql.DB, itemId *string, accessToken *string) {
 	log.Println("Insertion successful")
 }
 
+type AccessTokenRequest struct {
+	AccessToken string `json:"access_token"`
+}
+
 func balance(c *gin.Context) {
+	var accessTokenRequest AccessTokenRequest
+	if err := c.BindJSON(&accessTokenRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	accessToken := accessTokenRequest.AccessToken
+
 	ctx := context.Background()
 
 	balancesGetResp, _, err := client.PlaidApi.AccountsBalanceGet(ctx).AccountsBalanceGetRequest(

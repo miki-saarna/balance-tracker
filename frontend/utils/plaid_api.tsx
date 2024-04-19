@@ -58,7 +58,7 @@ const getAccountsBalances = async (accessToken: string): Promise<AccountsBalance
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ accessToken }),
+      body: JSON.stringify({ access_token: accessToken }),
     });
   } catch (err) {
     console.log("There was an error retrieving accounts with associated balances", err)
