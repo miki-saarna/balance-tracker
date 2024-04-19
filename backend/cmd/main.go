@@ -109,7 +109,7 @@ func main() {
 func createLinkToken(c *gin.Context) {
 	linkToken, err := tokens.LinkTokenCreate(nil)
 	if err != nil {
-		renderError(c, err)
+		utils.RenderError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"link_token": linkToken})
@@ -143,50 +143,11 @@ func balance(c *gin.Context) {
 	).Execute()
 
 	if err != nil {
-		renderError(c, err)
+		utils.RenderError(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"accounts": balancesGetResp.GetAccounts(),
 	})
-}
-
-func convertCountryCodes(countryCodeStrs []string) []plaid.CountryCode {
-	countryCodes := []plaid.CountryCode{}
-
-	for _, countryCodeStr := range countryCodeStrs {
-		countryCodes = append(countryCodes, plaid.CountryCode(countryCodeStr))
-	}
-
-	return countryCodes
-}
-
-func convertProducts(productStrs []string) []plaid.Products {
-	products := []plaid.Products{}
-
-	for _, productStr := range productStrs {
-		products = append(products, plaid.Products(productStr))
-	}
-
-	return products
-}
-
-func containsProduct(products []plaid.Products, product plaid.Products) bool {
-	for _, p := range products {
-		if p == product {
-			return true
-		}
-	}
-	return false
-}
-
-func renderError(c *gin.Context, originalErr error) {
-	if plaidError, err := plaid.ToPlaidError(originalErr); err == nil {
-		// Return 200 and allow the front end to render the error.
-		c.JSON(http.StatusOK, gin.H{"error": plaidError})
-		return
-	}
-
-	c.JSON(http.StatusInternalServerError, gin.H{"error": originalErr.Error()})
 }
