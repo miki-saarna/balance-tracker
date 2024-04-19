@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -62,27 +61,7 @@ func init() {
 	configuration.UseEnvironment(environments[PLAID_ENV])
 	client = plaid.NewAPIClient(configuration)
 
-	genTables()
-}
-
-func genTables() {
-	// Read SQL from file
-	sqlBytes, err := os.ReadFile("db/migrations/migrations.sql")
-	if err != nil {
-		log.Fatalf("Error reading SQL file: %v", err)
-	}
-	sqlString := string(sqlBytes)
-	// fmt.Println("sqlString", sqlString)
-
-	db := utils.ConnectDB()
-	defer db.Close()
-	// Execute SQL from file
-	_, err = db.Exec(sqlString)
-	if err != nil {
-		log.Fatalf("Error executing SQL query: %v", err)
-	}
-
-	fmt.Println("SQL executed successfully")
+	sqlCmd.GenTables()
 }
 
 func main() {
