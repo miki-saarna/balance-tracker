@@ -6,11 +6,11 @@ CREATE TABLE IF NOT EXISTS items (
 );
 
 CREATE TABLE IF NOT EXISTS accounts (
-  id INT PRIMARY KEY,
+  id VARCHAR(255) PRIMARY KEY,
   item_id VARCHAR(255),
   account_name VARCHAR(255) NOT NULL,
   account_type VARCHAR(255) NOT NULL,
-  balance DECIMAL(12, 2) NOT NULL,
+  balance FLOAT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (item_id) REFERENCES items(id)
 );
