@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	database "github.com/miki-saarna/balance-tracker/utils"
+	utils "github.com/miki-saarna/balance-tracker/utils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -66,26 +66,9 @@ func init() {
 	client = plaid.NewAPIClient(configuration)
 
 	// connectRdsDb()
-	db := database.ConnectDB()
+	db := utils.ConnectDB()
 	genTables(db)
 	db.Close()
-}
-
-// need to update in the future to not accept `*`
-func CORSMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
-
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
-			return
-		}
-
-		c.Next()
-	}
 }
 
 func genTables(db *sql.DB) {
@@ -158,7 +141,7 @@ func main() {
 	r := gin.Default()
 
 	// CORS
-	r.Use(CORSMiddleware())
+	r.Use(utils.CORSMiddleware())
 
 	// routes
 	r.POST("/api/create_link_token", createLinkToken)
@@ -259,7 +242,7 @@ func getAccessToken(c *gin.Context) {
 	accessToken := exchangePublicTokenResp.GetAccessToken()
 	itemID := exchangePublicTokenResp.GetItemId()
 
-	db := database.ConnectDB()
+	db := utils.ConnectDB()
 	saveAccessToken(db, &itemID, &accessToken)
 	db.Close()
 
@@ -282,7 +265,7 @@ func getAccessTokens(c *gin.Context) {
 	}
 	sqlString := string(sqlBytes)
 
-	db := database.ConnectDB()
+	db := utils.ConnectDB()
 	defer db.Close()
 
 	// rows, err := db.Query("SELECT access_token FROM items")
