@@ -24,6 +24,7 @@ func Balance(c *gin.Context) {
 
 	ctx := context.Background()
 
+	// `client` is defined within this file's sibling `tokens.go` file
 	balancesGetResp, _, err := client.PlaidApi.AccountsBalanceGet(ctx).AccountsBalanceGetRequest(
 		*plaid.NewAccountsBalanceGetRequest(accessToken),
 	).Execute()

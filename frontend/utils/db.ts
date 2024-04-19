@@ -16,7 +16,7 @@ const getAccessTokens = async (): Promise<AccessTokensResponse | void> => {
     console.error(err)
     return
   }
-    
+
   const data: AccessTokensResponse = await res.json()
   return data
 }
