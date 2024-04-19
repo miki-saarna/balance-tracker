@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	plaidFuncs "github.com/miki-saarna/balance-tracker/cmd/plaid"
+	routes "github.com/miki-saarna/balance-tracker/cmd/routes"
 	sqlCmd "github.com/miki-saarna/balance-tracker/cmd/sql"
 	utils "github.com/miki-saarna/balance-tracker/utils"
 
@@ -34,11 +34,7 @@ func main() {
 	// CORS
 	r.Use(utils.CORSMiddleware())
 
-	// routes
-	r.POST("/api/create_link_token", plaidFuncs.CreateLinkToken)
-	r.POST("/api/set_access_token", plaidFuncs.GetAccessToken)
-	r.GET("/api/get_access_tokens", sqlCmd.GetAccessTokens)
-	r.POST("/api/balance", plaidFuncs.Balance)
+	routes.InitRoutes(r)
 
 	err := r.Run(":" + APP_PORT)
 	if err != nil {
