@@ -52,34 +52,47 @@ const Balances = () => {
 };
 
 interface BalanceProps {
-  accessToken: string | null
+  accessToken: string
+}
+
+type AccountsByAccessToken = {
+  [key: string]: any[] // update with correct type from Plaid
 }
 
 const Balance: React.FC<BalanceProps> = (props: BalanceProps) => {
-  const [accounts, setAccounts] = useState<any[]>([]);
+  const [accounts, setAccounts] = useState<AccountsByAccessToken>({});
 
   useEffect(() => {
     (async() => {
-      const data: AccountsBalancesResponse | void = await getAccountsBalances(props.accessToken as string)
-      if (data) {
-        setAccounts(accounts.concat(data.accounts))
-      }
+      await refreshBalance(props.accessToken)
     })()
   }, []);
 
+  async function refreshBalance(accessToken: string): Promise<void> {
+    const data: AccountsBalancesResponse | void = await getAccountsBalances(accessToken)
+      if (data) {
+
+        setAccounts({
+          ...accounts,
+          [props.accessToken]: data.accounts
+        })
+      }
+  }
+
   return (
     <>
-      {accounts.map((account) => {
+      {Object.values(accounts).flat().map((account) => {
         return (
           <div key={account.account_id} className="line">
             <div>{account.name}</div>
             <div>{account.subtype}</div>
             <div>{account.balances.current}</div>
+            <button onClick={async () => await refreshBalance(props.accessToken)}>refresh</button>
           </div>
         )
       })}
       <div>
-        Total: {accounts.reduce((acc, account) => acc + account.balances.current, 0)}
+        Total: {Object.values(accounts).flat().reduce((acc, account) => acc + account.balances.current, 0)}
       </div>
     </>
   )
