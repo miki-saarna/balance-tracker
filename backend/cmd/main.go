@@ -115,14 +115,6 @@ func createLinkToken(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"link_token": linkToken})
 }
 
-type TokenRequest struct {
-	PublicToken string `json:"public_token"`
-}
-
-type AccessTokensRequest struct {
-	AccessTokens string `json:"public_token"`
-}
-
 type AccessTokenRequest struct {
 	AccessToken string `json:"access_token"`
 }
