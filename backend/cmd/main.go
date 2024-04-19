@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 
 	plaidFuncs "github.com/miki-saarna/balance-tracker/cmd/plaid"
@@ -94,7 +93,7 @@ func main() {
 	r.Use(utils.CORSMiddleware())
 
 	// routes
-	r.POST("/api/create_link_token", createLinkToken)
+	r.POST("/api/create_link_token", plaidFuncs.CreateLinkToken)
 	r.POST("/api/set_access_token", plaidFuncs.GetAccessToken)
 	r.GET("/api/get_access_tokens", sqlCmd.GetAccessTokens)
 	r.POST("/api/balance", plaidFuncs.Balance)
@@ -103,13 +102,4 @@ func main() {
 	if err != nil {
 		panic("unable to start server")
 	}
-}
-
-func createLinkToken(c *gin.Context) {
-	linkToken, err := plaidFuncs.LinkTokenCreate(nil)
-	if err != nil {
-		utils.RenderError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"link_token": linkToken})
 }

@@ -64,7 +64,16 @@ func init() {
 	client = plaid.NewAPIClient(configuration)
 }
 
-func LinkTokenCreate(paymentInitiation *plaid.LinkTokenCreateRequestPaymentInitiation) (string, error) {
+func CreateLinkToken(c *gin.Context) {
+	linkToken, err := linkTokenCreate(nil)
+	if err != nil {
+		utils.RenderError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"link_token": linkToken})
+}
+
+func linkTokenCreate(paymentInitiation *plaid.LinkTokenCreateRequestPaymentInitiation) (string, error) {
 	ctx := context.Background()
 
 	// Institutions from all listed countries will be shown.
