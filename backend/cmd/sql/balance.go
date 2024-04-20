@@ -9,17 +9,13 @@ import (
 	plaid "github.com/plaid/plaid-go/v21/plaid"
 )
 
-func SaveBalance(accessToken *string, accounts *[]plaid.AccountBase) {
+func SaveBalance(accessToken *AccessToken, accounts *[]plaid.AccountBase) {
 	db := utils.ConnectDB()
 	defer db.Close()
 
 	for _, account := range *accounts {
 		// based on access_token, need to retrieve item_id
-		var item_id string
-		err := db.QueryRow("SELECT id AS item_id FROM items WHERE access_token = $1;", *accessToken).Scan(&item_id)
-		if err != nil {
-			log.Fatalf("Error retreiving item_id from access_token: %v", err)
-		}
+		item_id := accessToken.GetItemIdFromAccessToken()
 
 		sqlBytes, err := os.ReadFile("db/sql/saveBalance.sql")
 		if err != nil {

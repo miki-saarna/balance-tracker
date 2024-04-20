@@ -22,13 +22,13 @@ func Balance(c *gin.Context) {
 		return
 	}
 
-	accessToken := accessTokenRequest.AccessToken
+	accessTokenString := accessTokenRequest.AccessToken
 
 	ctx := context.Background()
 
 	// `client` is defined within this file's sibling `tokens.go` file
 	balancesGetResp, _, err := client.PlaidApi.AccountsBalanceGet(ctx).AccountsBalanceGetRequest(
-		*plaid.NewAccountsBalanceGetRequest(accessToken),
+		*plaid.NewAccountsBalanceGetRequest(accessTokenString),
 	).Execute()
 
 	if err != nil {
@@ -40,6 +40,8 @@ func Balance(c *gin.Context) {
 	defer db.Close()
 
 	accounts := balancesGetResp.GetAccounts()
+
+	accessToken := sqlCmd.AccessToken(accessTokenString)
 
 	sqlCmd.SaveBalance(&accessToken, &accounts)
 

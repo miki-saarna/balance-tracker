@@ -11,6 +11,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type AccessToken string
+
 func GetAccessTokens(c *gin.Context) {
 	var accessTokens []string
 
@@ -63,4 +65,17 @@ func SaveAccessToken(db *sql.DB, itemId *string, accessToken *string) {
 	}
 
 	log.Println("Insertion successful")
+}
+
+func (a *AccessToken) GetItemIdFromAccessToken() string {
+	db := utils.ConnectDB()
+	defer db.Close()
+
+	var item_id string
+	err := db.QueryRow("SELECT id AS item_id FROM items WHERE access_token = $1;", *a).Scan(&item_id)
+	if err != nil {
+		log.Fatalf("Error retreiving item_id from access_token: %v", err)
+	}
+
+	return item_id
 }
