@@ -34,10 +34,6 @@ func ConnectDB() *sql.DB {
 	var dbName string = DB_NAME
 	var dbPassword string = DB_MASTER_PASSWORD
 
-	fmt.Println("DB_USER", DB_USER)
-	fmt.Println("DB_NAME", DB_NAME)
-	fmt.Println("DB_MASTER_PASSWORD", DB_MASTER_PASSWORD)
-
 	psqlInfo := fmt.Sprintf(
 		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		dbHost, dbPort, dbUser, dbPassword, dbName,
