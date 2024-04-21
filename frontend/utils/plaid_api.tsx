@@ -14,8 +14,8 @@ const generateLinkToken = async (): Promise<LinkTokenResponse | void> => {
 };
 
 interface LinkProps {
-  linkToken: string | null;
-  setAccessToken: Function
+  linkToken: string | null
+  setAccessTokens: Function
 }
 
 const Link: React.FC<LinkProps> = (props: LinkProps) => {
@@ -27,9 +27,8 @@ const Link: React.FC<LinkProps> = (props: LinkProps) => {
       },
       body: JSON.stringify({ public_token }),
     });
-    const data = await response.json();
-    console.log(data) // {access_token, item_id}
-    props.setAccessToken(data.access_token)
+    const data = await response.json(); // {access_token, item_id}
+    props.setAccessTokens(prevTokens => [...prevTokens, data.access_token])
   }, []);
 
   const config: Parameters<typeof usePlaidLink>[0] = {

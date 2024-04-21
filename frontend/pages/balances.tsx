@@ -13,7 +13,6 @@ import {
 
 const Balances = () => {
   const [linkToken, setLinkToken] = useState("");
-  const [accessToken, setAccessToken] = useState(null);
   const [accessTokens, setAccessTokens] = useState<string[]>([]);
 
   useEffect(() => {
@@ -41,11 +40,7 @@ const Balances = () => {
   return (
     linkToken != null &&
       <>
-        <Link linkToken={linkToken} setAccessToken={setAccessToken} />
-        {
-          accessToken != null &&
-          <Balance accessToken={accessToken} />
-        }
+        <Link linkToken={linkToken} setAccessTokens={setAccessTokens} />
         {accessTokens.map((accessToken) => <Balance key={accessToken} accessToken={accessToken} />)}
       </>
   )
@@ -59,7 +54,7 @@ type AccountsByAccessToken = {
   [key: string]: any[] // update with correct type from Plaid
 }
 
-const Balance: React.FC<BalanceProps> = (props: BalanceProps) => {
+const Balance: React.FC<BalanceProps> = React.memo((props: BalanceProps) => {
   const [accounts, setAccounts] = useState<AccountsByAccessToken>({});
 
   useEffect(() => {
@@ -71,7 +66,6 @@ const Balance: React.FC<BalanceProps> = (props: BalanceProps) => {
   async function refreshBalance(accessToken: string): Promise<void> {
     const data: AccountsBalancesResponse | void = await getAccountsBalances(accessToken)
       if (data) {
-
         setAccounts({
           ...accounts,
           [props.accessToken]: data.accounts
@@ -96,6 +90,6 @@ const Balance: React.FC<BalanceProps> = (props: BalanceProps) => {
       </div>
     </>
   )
-}
+})
 
 export default Balances;
