@@ -67,15 +67,15 @@ func SaveAccessToken(db *sql.DB, itemId *string, accessToken *string) {
 	log.Println("Insertion successful")
 }
 
-func (a *AccessToken) GetItemIdFromAccessToken() string {
+func (a *AccessToken) GetItemIdFromAccessToken() (ItemId, error) {
 	db := utils.ConnectDB()
 	defer db.Close()
 
-	var item_id string
+	var item_id ItemId
 	err := db.QueryRow("SELECT id AS item_id FROM items WHERE access_token = $1;", *a).Scan(&item_id)
 	if err != nil {
-		log.Fatalf("Error retreiving item_id from access_token: %v", err)
+		return "", err
 	}
 
-	return item_id
+	return item_id, nil
 }

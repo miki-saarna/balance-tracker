@@ -2,6 +2,7 @@ package plaidFuncs
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	sqlCmd "github.com/miki-saarna/balance-tracker/cmd/sql"
@@ -16,6 +17,8 @@ type AccessTokenRequest struct {
 }
 
 func Balance(c *gin.Context) {
+	ctx := context.Background()
+
 	var accessTokenRequest AccessTokenRequest
 	if err := c.BindJSON(&accessTokenRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -23,8 +26,27 @@ func Balance(c *gin.Context) {
 	}
 
 	accessTokenString := accessTokenRequest.AccessToken
+	accessToken := sqlCmd.AccessToken(accessTokenString)
 
-	ctx := context.Background()
+	itemId, err := accessToken.GetItemIdFromAccessToken()
+	if err != nil {
+		fmt.Printf("Could not retreive item_id from access_token from database: %v", err)
+	}
+
+	accountsFromDb, err := itemId.GetAccounts()
+	if err != nil {
+		fmt.Println(err)
+	} else if len(accountsFromDb) > 0 {
+		var reformattedAccounts []sqlCmd.PlaidAccountStruct
+		for _, account := range accountsFromDb {
+			reformattedAccounts = append(reformattedAccounts, account.ConvertToPlaidAccountType())
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"accounts": reformattedAccounts,
+		})
+		return
+	}
 
 	// `client` is defined within this file's sibling `tokens.go` file
 	balancesGetResp, _, err := client.PlaidApi.AccountsBalanceGet(ctx).AccountsBalanceGetRequest(
@@ -40,8 +62,6 @@ func Balance(c *gin.Context) {
 	defer db.Close()
 
 	accounts := balancesGetResp.GetAccounts()
-
-	accessToken := sqlCmd.AccessToken(accessTokenString)
 
 	sqlCmd.SaveBalance(&accessToken, &accounts)
 
