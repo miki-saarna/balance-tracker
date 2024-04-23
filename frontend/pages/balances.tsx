@@ -74,7 +74,6 @@ const Balance: React.FC<BalanceProps> = React.memo((props: BalanceProps) => {
       }
   }
 
-  // consider moving to helper utils fild
   async function removeAccount(account_id: string, p): Promise<void> { // 2nd parameter necessary?
     // console.log("p", p)
 
