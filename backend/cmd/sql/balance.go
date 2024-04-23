@@ -134,7 +134,7 @@ func DeleteAccount(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"Error": fmt.Errorf("error retrieving SQL query: %v", err.Error())}) // using `fmt.Errorf` here might lead to issues
 		return
 	}
-	sqlString := fmt.Sprintf(string(sqlBytes), account_id, account_id, account_id)
+	sqlString := fmt.Sprintf(string(sqlBytes), account_id, account_id)
 
 	db := utils.ConnectDB()
 	defer db.Close()
