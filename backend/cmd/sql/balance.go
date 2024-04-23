@@ -31,7 +31,7 @@ func SaveBalance(accessToken *AccessToken, accounts *[]plaid.AccountBase) {
 
 		// checking for duplicates
 
-		_, err = db.Exec(sqlString, account.AccountId, item_id, account.Name, account.Type, *account.Balances.Available.Get())
+		_, err = db.Exec(sqlString, account.AccountId, item_id, account.Name, *account.Subtype.Get(), *account.Balances.Available.Get())
 		if err != nil {
 			log.Fatalf("Error saving the account: %v", err)
 		}
