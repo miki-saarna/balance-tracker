@@ -114,7 +114,7 @@ const Balance: React.FC<BalanceProps> = React.memo((props: BalanceProps) => {
           <div key={account.account_id} className="line">
             <div>{account.name}</div>
             <div>{account.subtype}</div>
-            <div>{account.balances.current}</div>
+            <div>${account.balances.current}</div>
             <button onClick={async () => await refreshBalance(props.accessToken)}>refresh</button>
             {/* currently not saving `persistent_account_id` within the db */}
             <button onClick={() => removeAccount(account.account_id, account.persistent_account_id)}>remove</button>
@@ -122,7 +122,7 @@ const Balance: React.FC<BalanceProps> = React.memo((props: BalanceProps) => {
         )
       })}
       <div>
-        Total: {Object.values(accounts).flat().reduce((acc, account) => acc + account.balances.current, 0)}
+        Total: ${Object.values(accounts).flat().reduce((acc, account) => acc + account.balances.current, 0)}
       </div>
     </>
   )
