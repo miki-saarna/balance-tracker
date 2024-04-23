@@ -3,9 +3,11 @@ package sqlCmd
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	utils "github.com/miki-saarna/balance-tracker/utils"
 	plaid "github.com/plaid/plaid-go/v21/plaid"
 )
@@ -113,4 +115,34 @@ func (i *ItemId) GetAccounts() ([]AccountStruct, error) {
 	fmt.Println("Successfully retrieved accounts from database")
 
 	return accounts, nil
+}
+
+type AccountIdRequest struct {
+	Account_Id string `json:"account_id"`
+}
+
+func DeleteAccount(c *gin.Context) {
+	var accountIdRequest AccountIdRequest
+	if err := c.BindJSON(&accountIdRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"Error:": err.Error()})
+		return
+	}
+	account_id := accountIdRequest.Account_Id
+
+	sqlBytes, err := os.ReadFile("db/sql/deleteAccount.sql")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"Error": fmt.Errorf("error retrieving SQL query: %v", err.Error())}) // using `fmt.Errorf` here might lead to issues
+		return
+	}
+	sqlString := fmt.Sprintf(string(sqlBytes), account_id, account_id, account_id)
+
+	db := utils.ConnectDB()
+	defer db.Close()
+
+	_, err = db.Exec(sqlString)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"Error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{})
 }

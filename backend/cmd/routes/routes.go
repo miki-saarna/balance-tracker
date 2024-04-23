@@ -11,4 +11,5 @@ func InitRoutes(r *gin.Engine) {
 	r.POST("/api/set_access_token", plaidFuncs.GetAccessToken)
 	r.GET("/api/get_access_tokens", sqlCmd.GetAccessTokens)
 	r.POST("/api/balance", plaidFuncs.Balance)
+	r.DELETE("/api/account/delete", sqlCmd.DeleteAccount)
 }

@@ -18,8 +18,8 @@ const Balances = () => {
   useEffect(() => {
     (async () => {
       try {
-        const data: AccessTokensResponse | void = await getAccessTokens();
-        if (data) {
+        const data: AccessTokensResponse | void = await getAccessTokens(); // void might be unused
+        if (data?.access_tokens) {
           setAccessTokens(data.access_tokens)
         }
       } catch (err) {
@@ -64,6 +64,7 @@ const Balance: React.FC<BalanceProps> = React.memo((props: BalanceProps) => {
   }, []);
 
   async function refreshBalance(accessToken: string): Promise<void> {
+    // getAccountsBalances func - partially Plaid and partially db
     const data: AccountsBalancesResponse | void = await getAccountsBalances(accessToken)
       if (data) {
         setAccounts({
@@ -71,6 +72,40 @@ const Balance: React.FC<BalanceProps> = React.memo((props: BalanceProps) => {
           [props.accessToken]: data.accounts
         })
       }
+  }
+
+  // consider moving to helper utils fild
+  async function removeAccount(account_id: string, p): Promise<void> { // 2nd parameter necessary?
+    // console.log("p", p)
+
+    let res
+    try {
+      res = await fetch("http://localhost:8000/api/account/delete", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ account_id })
+      })
+    } catch (err) {
+      console.log("There was an error deleting the account", err)
+      return
+    }
+
+    const data = await res.json()
+    // console.log("data: ", data)
+
+    const modifyAccounts = { ...accounts }
+
+    const accountsBelongingToAccessToken = modifyAccounts[props.accessToken]
+    if (accountsBelongingToAccessToken.length > 1) {
+      const deletionIdx = accountsBelongingToAccessToken.findIndex((account) => account.account_id === account_id)
+      modifyAccounts[props.accessToken].splice(deletionIdx, 1)
+      setAccounts(modifyAccounts)
+    } else {
+      delete modifyAccounts[props.accessToken]
+      setAccounts(modifyAccounts)
+    }
   }
 
   return (
@@ -82,6 +117,8 @@ const Balance: React.FC<BalanceProps> = React.memo((props: BalanceProps) => {
             <div>{account.subtype}</div>
             <div>{account.balances.current}</div>
             <button onClick={async () => await refreshBalance(props.accessToken)}>refresh</button>
+            {/* currently not saving `persistent_account_id` within the db */}
+            <button onClick={() => removeAccount(account.account_id, account.persistent_account_id)}>remove</button>
           </div>
         )
       })}
