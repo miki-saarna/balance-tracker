@@ -11,9 +11,14 @@ import {
   getAccountsBalances
 } from '../utils/plaid_api';
 
+type AccountsByAccessToken = {
+  [key: string]: any[] // update with correct type from Plaid
+}
+
 const Balances = () => {
   const [linkToken, setLinkToken] = useState("");
   const [accessTokens, setAccessTokens] = useState<string[]>([]);
+  const [accounts, setAccounts] = useState<AccountsByAccessToken>({});
 
   useEffect(() => {
     (async () => {
@@ -37,44 +42,26 @@ const Balances = () => {
     })()
   }, []);
 
-  return (
-    linkToken != null &&
-      <>
-        <Link linkToken={linkToken} setAccessTokens={setAccessTokens} />
-        {accessTokens.map((accessToken) => <Balance key={accessToken} accessToken={accessToken} />)}
-      </>
-  )
-};
-
-interface BalanceProps {
-  accessToken: string
-}
-
-type AccountsByAccessToken = {
-  [key: string]: any[] // update with correct type from Plaid
-}
-
-const Balance: React.FC<BalanceProps> = React.memo((props: BalanceProps) => {
-  const [accounts, setAccounts] = useState<AccountsByAccessToken>({});
-
   useEffect(() => {
     (async() => {
-      await refreshBalance(props.accessToken)
+      for (const accessToken of accessTokens) {
+        await refreshBalance(accessToken)
+      }
     })()
-  }, []);
+  }, [accessTokens])
 
   async function refreshBalance(accessToken: string): Promise<void> {
     // getAccountsBalances func - partially Plaid and partially db
     const data: AccountsBalancesResponse | void = await getAccountsBalances(accessToken)
-      if (data) {
-        setAccounts({
-          ...accounts,
-          [props.accessToken]: data.accounts
-        })
-      }
+    if (data) {
+      setAccounts((prevAccounts) => ({
+        ...prevAccounts,
+        [accessToken]: data.accounts
+      }))
+    }
   }
 
-  async function removeAccount(account_id: string, p): Promise<void> { // 2nd parameter necessary?
+  async function removeAccount(accessToken: string, account_id: string, p): Promise<void> { // 2nd parameter necessary?
     // console.log("p", p)
 
     let res
@@ -96,36 +83,46 @@ const Balance: React.FC<BalanceProps> = React.memo((props: BalanceProps) => {
 
     const modifyAccounts = { ...accounts }
 
-    const accountsBelongingToAccessToken = modifyAccounts[props.accessToken]
+    const accountsBelongingToAccessToken = modifyAccounts[accessToken]
     if (accountsBelongingToAccessToken.length > 1) {
       const deletionIdx = accountsBelongingToAccessToken.findIndex((account) => account.account_id === account_id)
-      modifyAccounts[props.accessToken].splice(deletionIdx, 1)
+      modifyAccounts[accessToken].splice(deletionIdx, 1)
       setAccounts(modifyAccounts)
     } else {
-      delete modifyAccounts[props.accessToken]
+      delete modifyAccounts[accessToken]
       setAccounts(modifyAccounts)
     }
   }
 
+  function RenderTotalBalance() {
+    const accountsList = Object.values(accounts)
+    if (!accountsList.length) return
+    const sum = Object.values(accounts).flat().reduce((acc, account) => acc + account.balances.current, 0)
+    return <div>Total: ${sum}</div>
+  }
+
   return (
     <>
-      {Object.values(accounts).flat().map((account) => {
-        return (
-          <div key={account.account_id} className="line">
-            <div>{account.name}</div>
-            <div>{account.subtype}</div>
-            <div>${account.balances.current}</div>
-            <button onClick={async () => await refreshBalance(props.accessToken)}>refresh</button>
-            {/* currently not saving `persistent_account_id` within the db */}
-            <button onClick={() => removeAccount(account.account_id, account.persistent_account_id)}>remove</button>
-          </div>
-        )
-      })}
-      <div>
-        Total: ${Object.values(accounts).flat().reduce((acc, account) => acc + account.balances.current, 0)}
-      </div>
+      <Link linkToken={linkToken} setAccessTokens={setAccessTokens} />
+
+      {Object.entries(accounts).map(([accessToken, accountsList]) => 
+        accountsList.map((account) => {
+          return (
+            <div key={account.account_id} className="line">
+              <div>{account.name}</div>
+              <div>{account.subtype}</div>
+              <div>${account.balances.current}</div>
+              <button onClick={async () => await refreshBalance(accessToken)}>refresh</button>
+              {/* currently not saving `persistent_account_id` within the db */}
+              <button onClick={() => removeAccount(accessToken, account.account_id, account.persistent_account_id)}>remove</button>
+            </div>
+          )
+        })
+      )}
+
+      <RenderTotalBalance />
     </>
   )
-})
+};
 
 export default Balances;
