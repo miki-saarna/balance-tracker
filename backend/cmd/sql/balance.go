@@ -31,6 +31,11 @@ func SaveBalance(accessToken *AccessToken, accounts *[]plaid.AccountBase) {
 
 		// checking for duplicates
 
+		a := account.Balances.Available.Get()
+		b := *account.Balances.Available.Get()
+		fmt.Println("a", a)
+		fmt.Println("b", b)
+
 		_, err = db.Exec(sqlString, account.AccountId, item_id, account.Name, *account.Subtype.Get(), *account.Balances.Available.Get())
 		if err != nil {
 			log.Fatalf("Error saving the account: %v", err)
@@ -50,7 +55,7 @@ type AccountStruct struct {
 }
 
 type Balances struct {
-	Current float64 `json:"current"`
+	Available float64 `json:"available"`
 }
 
 type PlaidAccountStruct struct {

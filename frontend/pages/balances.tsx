@@ -23,7 +23,7 @@ const Balances = () => {
   useEffect(() => {
     (async () => {
       try {
-        const data: AccessTokensResponse | void = await getAccessTokens(); // void might be unused
+        const data: AccessTokensResponse | void = await getAccessTokens();
         if (data?.access_tokens) {
           setAccessTokens(data.access_tokens)
         }
