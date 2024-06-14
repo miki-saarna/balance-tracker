@@ -34,10 +34,7 @@ const Link = (props) => {
       body: JSON.stringify({ public_token }),
     });
     const data = await response.json(); // {access_token, item_id}
-    props.accessTokens.value = (prevTokens) => [
-      ...prevTokens,
-      data.access_token,
-    ];
+    props.accessTokens.value = [...props.accessTokens.value, data.access_token];
   };
 
   // const config: Parameters<typeof usePlaidLink>[0] = {
