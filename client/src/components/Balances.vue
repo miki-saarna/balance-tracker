@@ -1,8 +1,12 @@
 <template>
-  <Link v-if="linkToken" :linkToken="linkToken" :accessTokens="accessTokens" />
+  <Link
+    v-if="linkToken"
+    :linkToken="linkToken"
+    :accessTokens="toRef(accessTokens)"
+  />
 
   <div class="mt-4 border-t border-gray-300">
-    <div v-for="[accessToken, accountsList] of Object.entries(accounts)">
+    <div v-for="[accessToken, accountsList] of accountsEntries">
       <div v-for="account of accountsList">
         <div
           :key="account.account_id"
@@ -44,29 +48,32 @@
 </template>
 
 <script setup lang="ts">
-import { shallowRef, ref, onBeforeMount, watch, h } from "vue";
+import { shallowRef, ref, onBeforeMount, watch, h, toRef, computed } from "vue";
+import type { Ref, ComputedRef } from "vue";
 import { usePlaidTokens } from "../composables/useAccessTokensRetrieval";
-import { AccessTokensResponse, getAccessTokens } from "../utils/db";
-import {
-  Link,
-  getAccountsBalances,
-  AccountsBalancesResponse,
-} from "../utils/plaid_api";
+import { getAccessTokens } from "../utils/db";
+import type { AccessTokensResponse } from "../utils/db";
+import { Link, getAccountsBalances } from "../utils/plaid_api";
+import type { AccountsBalancesResponse } from "../utils/plaid_api";
 import { ArrowPathIcon, TrashIcon } from "@heroicons/vue/24/solid";
 
 type AccountsByAccessToken = {
   [key: string]: any[]; // update with correct type from Plaid
 };
 
+type Account = {
+  [key: string]: any;
+};
+
 const props = defineProps({
   msg: String,
 });
 
-const accounts = ref({});
+const accounts: Ref<{ [key: string]: Account[] }> = ref({});
 
-// const accountsArray = computed(() => {
-//   return Object.entries(accounts.value)
-// })
+const accountsEntries: ComputedRef<[string, Account[]][]> = computed(() => {
+  return Object.entries(accounts.value);
+});
 
 const { accessTokens, genAccessTokens, linkToken, genLinkToken } =
   usePlaidTokens();
@@ -108,7 +115,7 @@ async function removeAccount(
   const data = await res.json();
   // console.log("data: ", data)
 
-  const modifyAccounts = { ...accounts };
+  const modifyAccounts = { ...accounts.value };
 
   const accountsBelongingToAccessToken = modifyAccounts[accessToken];
   if (accountsBelongingToAccessToken.length > 1) {

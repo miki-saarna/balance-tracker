@@ -1,15 +1,16 @@
 import { h, onMounted, computed } from "vue";
+import type { Ref, VNode } from "vue";
 
-type LinkTokenResponse = {
+export type LinkTokenResponse = {
   link_token: string;
 };
 
 interface LinkProps {
   linkToken: string | null;
-  setAccessTokens: Function;
+  accessTokens: Ref<string[]>;
 }
 
-type AccountsBalancesResponse = {
+export type AccountsBalancesResponse = {
   accounts: any; // check Plaid docs for actual type
 };
 
@@ -32,7 +33,7 @@ const generateLinkToken = async (): Promise<LinkTokenResponse | void> => {
 
 const Link = (props: LinkProps): VNode => {
   // const onSuccess = React.useCallback(async (public_token, metadata) => {
-  const onSuccess = async (public_token, metadata) => {
+  const onSuccess = async (public_token: string, metadata: any) => {
     console.log("onSuccess init!");
     const response = await fetch("http://localhost:8000/api/set_access_token", {
       method: "POST",
@@ -45,11 +46,13 @@ const Link = (props: LinkProps): VNode => {
     props.accessTokens.value = [...props.accessTokens.value, data.access_token];
   };
 
+  // @ts-ignore
   const config: Parameters<typeof Plaid.create>[0] = {
     token: props.linkToken,
     onSuccess,
   };
 
+  // @ts-ignore
   const { open } = Plaid.create(config);
 
   const openLink = async () => {
@@ -94,10 +97,4 @@ const getAccountsBalances = async (
   return data;
 };
 
-export {
-  LinkTokenResponse,
-  generateLinkToken,
-  Link,
-  AccountsBalancesResponse,
-  getAccountsBalances,
-};
+export { generateLinkToken, Link, getAccountsBalances };

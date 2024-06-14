@@ -1,4 +1,4 @@
-type AccessTokensResponse = {
+export type AccessTokensResponse = {
   access_tokens: string[];
 };
 
@@ -21,4 +21,4 @@ const getAccessTokens = async (): Promise<AccessTokensResponse | void> => {
   return data;
 };
 
-export { AccessTokensResponse, getAccessTokens };
+export { getAccessTokens };

@@ -1,6 +1,9 @@
-import { ref, Ref } from "vue";
-import { AccessTokensResponse, getAccessTokens } from "../utils/db";
-import { LinkTokenResponse, generateLinkToken } from "../utils/plaid_api";
+import { ref } from "vue";
+import type { Ref } from "vue";
+import { getAccessTokens } from "../utils/db";
+import type { AccessTokensResponse } from "../utils/db";
+import { generateLinkToken } from "../utils/plaid_api";
+import type { LinkTokenResponse } from "../utils/plaid_api";
 
 export function usePlaidTokens() {
   const accessTokens: Ref<string[]> = ref([]);
