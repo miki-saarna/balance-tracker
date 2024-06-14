@@ -1,4 +1,4 @@
-import { h, onMounted, computed, VNode } from "vue";
+import { h, onMounted, computed } from "vue";
 
 type LinkTokenResponse = {
   link_token: string;
