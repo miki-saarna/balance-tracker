@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from "vue-router";
 
+// @ts-ignore
 import Home from "../components/Home.vue";
+// @ts-ignore
 import Balances from "../components/Balances.vue";
 
 const routes = [
