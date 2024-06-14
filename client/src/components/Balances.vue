@@ -6,27 +6,35 @@
       <div v-for="account of accountsList">
         <div
           :key="account.account_id"
-          class="py-4 border-b border-gray-300 final:border-none"
+          class="flex justify-between py-4 border-b border-gray-300 final:border-none"
         >
-          <div>{{ account.name }}</div>
-          <div>{{ account.subtype }}</div>
-          <div>${{ account.balances.available }}</div>
-          <button @click="() => refreshBalance(accessToken)">refresh</button>
-          <!-- currently not saving `persistent_account_id` within the db -->
-          <button
-            class="ml-6"
-            @click="
-              () => {
-                removeAccount(
-                  accessToken,
-                  account.account_id,
-                  account.persistent_account_id
-                );
-              }
-            "
-          >
-            remove
-          </button>
+          <div class="flex flex-col">
+            <div>{{ account.name }}</div>
+            <div>{{ account.subtype }}</div>
+            <div>${{ account.balances.available }}</div>
+          </div>
+
+          <div class="">
+            <button @click="() => refreshBalance(accessToken)">
+              <ArrowPathIcon class="w-5" />
+            </button>
+
+            <!-- currently not saving `persistent_account_id` within the db -->
+            <button
+              class="ml-4"
+              @click="
+                () => {
+                  removeAccount(
+                    accessToken,
+                    account.account_id,
+                    account.persistent_account_id
+                  );
+                }
+              "
+            >
+              <TrashIcon class="w-5 text-red-500" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -40,6 +48,7 @@ import { shallowRef, ref, onBeforeMount, watch, h } from "vue";
 import { usePlaidTokens } from "../composables/useAccessTokensRetrieval";
 import { AccessTokensResponse, getAccessTokens } from "../utils/db";
 import { Link, getAccountsBalances } from "../utils/plaid_api";
+import { ArrowPathIcon, TrashIcon } from "@heroicons/vue/24/solid";
 
 type AccountsByAccessToken = {
   [key: string]: any[]; // update with correct type from Plaid
