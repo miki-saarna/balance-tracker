@@ -60,7 +60,7 @@ const Link = (props) => {
         "py-1 px-2 rounded bg-green-300 disabled:bg-green-50 cursor-pointer",
       onClick: openLink,
     },
-    "The link"
+    "Connect a new account"
   );
 };
 
