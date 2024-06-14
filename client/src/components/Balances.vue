@@ -47,7 +47,11 @@
 import { shallowRef, ref, onBeforeMount, watch, h } from "vue";
 import { usePlaidTokens } from "../composables/useAccessTokensRetrieval";
 import { AccessTokensResponse, getAccessTokens } from "../utils/db";
-import { Link, getAccountsBalances } from "../utils/plaid_api";
+import {
+  Link,
+  getAccountsBalances,
+  AccountsBalancesResponse,
+} from "../utils/plaid_api";
 import { ArrowPathIcon, TrashIcon } from "@heroicons/vue/24/solid";
 
 type AccountsByAccessToken = {

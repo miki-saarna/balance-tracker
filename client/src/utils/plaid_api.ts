@@ -1,31 +1,39 @@
-import { h, onMounted, computed } from "vue";
+import { h, onMounted, computed, VNode } from "vue";
 
-// type LinkTokenResponse = {
-//   link_token: string;
-// };
+type LinkTokenResponse = {
+  link_token: string;
+};
 
-// const generateLinkToken = async (): Promise<LinkTokenResponse | void> => {
-const generateLinkToken = async () => {
-  const response = await fetch("http://localhost:8000/api/create_link_token", {
-    method: "POST",
-  });
-  // const data: LinkTokenResponse = await response.json();
-  const data = await response.json();
+interface LinkProps {
+  linkToken: string | null;
+  setAccessTokens: Function;
+}
+
+type AccountsBalancesResponse = {
+  accounts: any; // check Plaid docs for actual type
+};
+
+const generateLinkToken = async (): Promise<LinkTokenResponse | void> => {
+  let data: LinkTokenResponse;
+  try {
+    const response = await fetch(
+      "http://localhost:8000/api/create_link_token",
+      {
+        method: "POST",
+      }
+    );
+    data = await response.json();
+  } catch (err) {
+    console.error("Error:", err);
+    return;
+  }
   return data;
 };
 
-// interface LinkProps {
-//   linkToken: string | null;
-//   setAccessTokens: Function;
-// }
-
-// const Link: React.FC<LinkProps> = (props: LinkProps) => {
-const Link = (props) => {
-  // const linkButton = ref(null);
-  // let plaidLinkHandler = null;
-
+const Link = (props: LinkProps): VNode => {
   // const onSuccess = React.useCallback(async (public_token, metadata) => {
   const onSuccess = async (public_token, metadata) => {
+    console.log("onSuccess init!");
     const response = await fetch("http://localhost:8000/api/set_access_token", {
       method: "POST",
       headers: {
@@ -37,8 +45,7 @@ const Link = (props) => {
     props.accessTokens.value = [...props.accessTokens.value, data.access_token];
   };
 
-  // const config: Parameters<typeof usePlaidLink>[0] = {
-  const config = {
+  const config: Parameters<typeof Plaid.create>[0] = {
     token: props.linkToken,
     onSuccess,
   };
@@ -64,11 +71,9 @@ const Link = (props) => {
   );
 };
 
-// type AccountsBalancesResponse = {
-//   accounts: any; // check Plaid docs for actual type
-// };
-
-const getAccountsBalances = async (accessToken) => {
+const getAccountsBalances = async (
+  accessToken: string
+): Promise<AccountsBalancesResponse | void> => {
   let res;
   try {
     res = await fetch("http://localhost:8000/api/balance", {
@@ -85,14 +90,14 @@ const getAccountsBalances = async (accessToken) => {
     );
     return;
   }
-  const data = await res.json();
+  const data: AccountsBalancesResponse = await res.json();
   return data;
 };
 
 export {
-  // LinkTokenResponse,
+  LinkTokenResponse,
   generateLinkToken,
   Link,
-  // AccountsBalancesResponse,
+  AccountsBalancesResponse,
   getAccountsBalances,
 };
