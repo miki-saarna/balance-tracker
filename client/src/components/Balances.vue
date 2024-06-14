@@ -145,13 +145,14 @@ onBeforeMount(async () => {
   await genLinkToken();
 });
 
-watch(accessTokens, (tokens) => {
-  for (const accessToken of tokens) {
-    refreshBalance(accessToken);
-  }
+watch(
+  () => accessTokens.value.length,
+  () => {
+    for (const accessToken of accessTokens.value) {
+      refreshBalance(accessToken);
+    }
 
-  setTimeout(() => {
     RenderTotalBalance();
-  }, 1000);
-});
+  }
+);
 </script>

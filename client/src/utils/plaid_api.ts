@@ -34,7 +34,6 @@ const generateLinkToken = async (): Promise<LinkTokenResponse | void> => {
 const Link = (props: LinkProps): VNode => {
   // const onSuccess = React.useCallback(async (public_token, metadata) => {
   const onSuccess = async (public_token: string, metadata: any) => {
-    console.log("onSuccess init!");
     const response = await fetch("http://localhost:8000/api/set_access_token", {
       method: "POST",
       headers: {
@@ -43,7 +42,7 @@ const Link = (props: LinkProps): VNode => {
       body: JSON.stringify({ public_token }),
     });
     const data = await response.json(); // {access_token, item_id}
-    props.accessTokens.value = [...props.accessTokens.value, data.access_token];
+    props.accessTokens.value.push(data.access_token);
   };
 
   // @ts-ignore
