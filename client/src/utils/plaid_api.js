@@ -1,7 +1,4 @@
-import { h } from "vue";
-// import { usePlaidLink } from "react-plaid-link";
-// import { usePlaidLink } from "plaid-link";
-import { create } from "plaid";
+import { h, onMounted, computed, watch } from "vue";
 
 // type LinkTokenResponse = {
 //   link_token: string;
@@ -24,23 +21,24 @@ const generateLinkToken = async () => {
 
 // const Link: React.FC<LinkProps> = (props: LinkProps) => {
 const Link = (props) => {
+  // const linkButton = ref(null);
+  // let plaidLinkHandler = null;
+
   // const onSuccess = React.useCallback(async (public_token, metadata) => {
-  const onSuccess =
-    (async (public_token) => {
-      const response = await fetch(
-        "http://localhost:8000/api/set_access_token",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ public_token }),
-        }
-      );
-      const data = await response.json(); // {access_token, item_id}
-      props.setAccessTokens((prevTokens) => [...prevTokens, data.access_token]);
-    },
-    []);
+  const onSuccess = async (public_token, metadata) => {
+    const response = await fetch("http://localhost:8000/api/set_access_token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ public_token }),
+    });
+    const data = await response.json(); // {access_token, item_id}
+    props.accessTokens.value = (prevTokens) => [
+      ...prevTokens,
+      data.access_token,
+    ];
+  };
 
   // const config: Parameters<typeof usePlaidLink>[0] = {
   const config = {
@@ -48,22 +46,25 @@ const Link = (props) => {
     onSuccess,
   };
 
-  const { open, ready } = create(config);
-  // const { open, ready } = usePlaidLink(config);
+  const { open } = Plaid.create(config);
 
-  const vnode = h(
+  const openLink = async () => {
+    try {
+      const res = await open();
+    } catch (err) {
+      console.error("Error:", err);
+    }
+  };
+
+  return h(
     "button",
-    { onClick: open, disabled: !ready },
-    "Link account"
+    {
+      class:
+        "py-1 px-2 rounded bg-green-300 disabled:bg-green-50 cursor-pointer",
+      onClick: openLink,
+    },
+    "The link"
   );
-
-  return vnode;
-
-  // return (
-  //   <button onClick={() => open()} disabled={!ready}>
-  //     Link account
-  //   </button>
-  // );
 };
 
 // type AccountsBalancesResponse = {

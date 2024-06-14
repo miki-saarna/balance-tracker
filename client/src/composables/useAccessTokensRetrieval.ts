@@ -3,7 +3,6 @@ import { AccessTokensResponse, getAccessTokens } from "../utils/db";
 import {
   // LinkTokenResponse,
   generateLinkToken,
-  Link,
   // AccountsBalancesResponse,
   getAccountsBalances,
 } from "../utils/plaid_api";

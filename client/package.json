@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "plaid": "^24.0.0",
-    "react-plaid-link": "^3.5.2",
     "vue": "^3.4.21",
     "vue-router": "^4.3.3"
   },
