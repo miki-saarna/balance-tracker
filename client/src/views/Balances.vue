@@ -15,9 +15,7 @@
           :type="account.subtype"
           :balance="account.balances.available"
           @refresh-balance="refreshBalance(accessToken)"
-          @remove-account="
-            removeAccountHandler(accessToken, account.account_id)
-          "
+          @remove-account="removeAccountHandler(accessToken, account)"
         />
       </div>
     </div>
