@@ -8,6 +8,7 @@ export type LinkTokenResponse = {
 interface LinkProps {
   linkToken: string | null;
   accessTokens: Ref<string[]>;
+  refreshBalance: (accessToken: string) => Promise<void>;
 }
 
 export type AccountsBalancesResponse = {
@@ -33,15 +34,35 @@ const genLinkToken = async (): Promise<LinkTokenResponse | void> => {
 const Link = (props: LinkProps): VNode => {
   // const onSuccess = React.useCallback(async (public_token, metadata) => {
   const onSuccess = async (public_token: string, metadata: any) => {
-    const response = await fetch("http://localhost:8000/api/set_access_token", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ public_token }),
-    });
-    const data = await response.json(); // {access_token, item_id}
+    let data;
+    try {
+      const response = await fetch(
+        "http://localhost:8000/api/set_access_token",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ public_token }),
+        }
+      );
+
+      data = await response.json(); // {access_token, item_id}
+    } catch (err) {
+      console.error("There was an error accessing an account:", err);
+      return;
+    }
+
     props.accessTokens.value.push(data.access_token);
+
+    try {
+      await props.refreshBalance(data.access_token);
+    } catch (err) {
+      console.error(
+        `There was an error retrieving balance of account with access_token ${data.access_token}:`,
+        err
+      );
+    }
   };
 
   // @ts-ignore

@@ -3,6 +3,7 @@
     v-if="linkToken"
     :linkToken="linkToken"
     :accessTokens="toRef(accessTokens)"
+    :refreshBalance="refreshBalance"
   />
 
   <div class="mt-4 border-t border-gray-300">
@@ -18,7 +19,7 @@
             <div>${{ account.balances.available }}</div>
           </div>
 
-          <div class="">
+          <div>
             <button @click="() => refreshBalance(accessToken)">
               <ArrowPathIcon class="w-5" />
             </button>
@@ -98,8 +99,20 @@ async function refreshBalance(accessToken: string): Promise<void> {
   }
 }
 
-function removeAccountHandler(accessToken: string, account: Account) {
-  removeAccount(account.account_id, account.persistent_account_id);
+async function removeAccountHandler(
+  accessToken: string,
+  account: Account
+): Promise<void> {
+  try {
+    await removeAccount(account.account_id, account.persistent_account_id);
+  } catch (err) {
+    console.log(
+      `There was an error trying to remove the account with ID ${account.account_id}:`,
+      err
+    );
+    return;
+  }
+
   const modifyAccounts = { ...accounts.value };
 
   const accountsBelongingToAccessToken = modifyAccounts[accessToken];
@@ -116,27 +129,25 @@ function removeAccountHandler(accessToken: string, account: Account) {
 }
 
 onBeforeMount(async () => {
-  const accessTokensRes = await getAccessTokens();
-  if (accessTokensRes) {
-    accessTokens.value = accessTokensRes.access_tokens;
-  }
-
-  const linkTokenRes = await genLinkToken();
-  if (linkTokenRes) {
-    linkToken.value = linkTokenRes.link_token;
-  }
-
-  for (const accessToken of accessTokens.value) {
-    refreshBalance(accessToken);
-  }
-});
-
-watch(
-  () => accessTokens.value.length,
-  () => {
+  try {
+    const accessTokensRes = await getAccessTokens();
+    if (accessTokensRes) {
+      accessTokens.value = accessTokensRes.access_tokens;
+    }
     for (const accessToken of accessTokens.value) {
       refreshBalance(accessToken);
     }
+  } catch (err) {
+    console.error(`There was an error retrieving access_tokens from DB:`, err);
   }
-);
+
+  try {
+    const linkTokenRes = await genLinkToken();
+    if (linkTokenRes) {
+      linkToken.value = linkTokenRes.link_token;
+    }
+  } catch (err) {
+    console.error("There was an error generate a link_token:", err);
+  }
+});
 </script>
