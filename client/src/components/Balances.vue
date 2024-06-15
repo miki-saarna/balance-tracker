@@ -43,7 +43,7 @@
     </div>
   </div>
 
-  <RenderTotalBalance class="mt-4" />
+  <div class="mt-4">Total: ${{ renderTotalBalance }}</div>
 </template>
 
 <script setup lang="ts">
@@ -75,6 +75,16 @@ const accountsEntries: ComputedRef<[string, Account[]][]> = computed(() => {
   return Object.entries(accounts.value);
 });
 
+const renderTotalBalance = computed(() => {
+  const accountsList = Object.values(accounts.value);
+  if (!accountsList.length) return;
+  const sum = accountsList
+    .filter((account) => !!account)
+    .flat()
+    .reduce((acc, account) => acc + account.balances.available, 0);
+  return sum;
+});
+
 async function refreshBalance(accessToken: string): Promise<void> {
   // getAccountsBalances func - partially Plaid and partially db
   const data: AccountsBalancesResponse | void = await getAccountsBalances(
@@ -84,16 +94,6 @@ async function refreshBalance(accessToken: string): Promise<void> {
   if (data) {
     accounts.value[accessToken] = data.accounts;
   }
-}
-
-function RenderTotalBalance() {
-  const accountsList = Object.values(accounts.value);
-  if (!accountsList.length) return;
-  const sum = accountsList
-    .filter((account) => !!account)
-    .flat()
-    .reduce((acc, account) => acc + account.balances.available, 0);
-  return h("div", `Total: $${sum}`);
 }
 
 function removeAccountHandler(accessToken: string, account: Account) {
@@ -135,8 +135,6 @@ watch(
     for (const accessToken of accessTokens.value) {
       refreshBalance(accessToken);
     }
-
-    RenderTotalBalance();
   }
 );
 </script>
