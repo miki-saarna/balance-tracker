@@ -9,32 +9,16 @@
   <div class="mt-4 border-t border-gray-300">
     <div v-for="[accessToken, accountsList] of accountsEntries">
       <div v-for="account of accountsList">
-        <div
+        <AccountCard
           :key="account.account_id"
-          class="flex justify-between py-4 border-b border-gray-300 final:border-none"
-        >
-          <div class="flex flex-col">
-            <div>{{ account.name }}</div>
-            <div>{{ account.subtype }}</div>
-            <div>${{ account.balances.available }}</div>
-          </div>
-
-          <div>
-            <button @click="() => refreshBalance(accessToken)">
-              <ArrowPathIcon class="w-5" />
-            </button>
-
-            <!-- currently not saving `persistent_account_id` within the db -->
-            <button
-              class="ml-4"
-              @click="
-                () => removeAccountHandler(accessToken, account.account_id)
-              "
-            >
-              <TrashIcon class="w-5 text-red-500" />
-            </button>
-          </div>
-        </div>
+          :name="account.name"
+          :type="account.subtype"
+          :balance="account.balances.available"
+          @refresh-balance="refreshBalance(accessToken)"
+          @remove-account="
+            removeAccountHandler(accessToken, account.account_id)
+          "
+        />
       </div>
     </div>
   </div>
@@ -45,13 +29,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onBeforeMount, watch, h, toRef, computed } from "vue";
+import { ref, onBeforeMount, toRef, computed } from "vue";
 import type { Ref, ComputedRef } from "vue";
 import { getAccessTokens, removeAccount } from "../utils/db";
 import type { AccessTokensResponse } from "../utils/db";
 import { Link, getAccountsBalances, genLinkToken } from "../utils/plaid_api";
 import type { AccountsBalancesResponse } from "../utils/plaid_api";
-import { ArrowPathIcon, TrashIcon } from "@heroicons/vue/24/solid";
+import AccountCard from "../components/AccountCard.vue";
 
 type AccountsByAccessToken = {
   [key: string]: any[]; // update with correct type from Plaid
