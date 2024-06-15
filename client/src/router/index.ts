@@ -1,9 +1,9 @@
 import { createRouter, createWebHistory } from "vue-router";
 
 // @ts-ignore
-import Home from "../components/Home.vue";
+import Home from "../views/Home.vue";
 // @ts-ignore
-import Balances from "../components/Balances.vue";
+import Balances from "../views/Balances.vue";
 
 const routes = [
   { path: "/", component: Home },
