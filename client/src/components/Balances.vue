@@ -28,12 +28,7 @@
             <button
               class="ml-4"
               @click="
-                () => {
-                  removeAccountHandler(
-                    account.account_id,
-                    account.persistent_account_id
-                  );
-                }
+                () => removeAccountHandler(accessToken, account.account_id)
               "
             >
               <TrashIcon class="w-5 text-red-500" />
