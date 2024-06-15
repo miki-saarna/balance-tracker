@@ -43,7 +43,9 @@
     </div>
   </div>
 
-  <div class="mt-4">Total: ${{ renderTotalBalance }}</div>
+  <div v-if="renderTotalBalance" class="mt-4">
+    Total: ${{ renderTotalBalance }}
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -75,7 +77,7 @@ const accountsEntries: ComputedRef<[string, Account[]][]> = computed(() => {
   return Object.entries(accounts.value);
 });
 
-const renderTotalBalance = computed(() => {
+const renderTotalBalance: ComputedRef<number | void> = computed(() => {
   const accountsList = Object.values(accounts.value);
   if (!accountsList.length) return;
   const sum = accountsList
