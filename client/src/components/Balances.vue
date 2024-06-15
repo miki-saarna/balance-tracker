@@ -28,8 +28,7 @@
               class="ml-4"
               @click="
                 () => {
-                  removeAccount(
-                    accessToken,
+                  removeAccountHandler(
                     account.account_id,
                     account.persistent_account_id
                   );
@@ -48,12 +47,11 @@
 </template>
 
 <script setup lang="ts">
-import { shallowRef, ref, onBeforeMount, watch, h, toRef, computed } from "vue";
+import { ref, onBeforeMount, watch, h, toRef, computed } from "vue";
 import type { Ref, ComputedRef } from "vue";
-import { usePlaidTokens } from "../composables/useAccessTokensRetrieval";
-import { getAccessTokens } from "../utils/db";
+import { getAccessTokens, removeAccount } from "../utils/db";
 import type { AccessTokensResponse } from "../utils/db";
-import { Link, getAccountsBalances } from "../utils/plaid_api";
+import { Link, getAccountsBalances, genLinkToken } from "../utils/plaid_api";
 import type { AccountsBalancesResponse } from "../utils/plaid_api";
 import { ArrowPathIcon, TrashIcon } from "@heroicons/vue/24/solid";
 
@@ -69,64 +67,22 @@ const props = defineProps({
   msg: String,
 });
 
+const linkToken: Ref<string> = ref("");
 const accounts: Ref<{ [key: string]: Account[] }> = ref({});
+const accessTokens: Ref<AccessTokensResponse["access_tokens"]> = ref([]);
 
 const accountsEntries: ComputedRef<[string, Account[]][]> = computed(() => {
   return Object.entries(accounts.value);
 });
-
-const { accessTokens, genAccessTokens, linkToken, genLinkToken } =
-  usePlaidTokens();
 
 async function refreshBalance(accessToken: string): Promise<void> {
   // getAccountsBalances func - partially Plaid and partially db
   const data: AccountsBalancesResponse | void = await getAccountsBalances(
     accessToken
   );
+
   if (data) {
-    accounts.value = {
-      ...accounts.value,
-      [accessToken]: data.accounts,
-    };
-  }
-}
-
-async function removeAccount(
-  accessToken: string,
-  account_id: string,
-  persistent_id: string
-): Promise<void> {
-  // 2nd parameter necessary?
-
-  let res;
-  try {
-    res = await fetch("http://localhost:8000/api/account/delete", {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ account_id }),
-    });
-  } catch (err) {
-    console.log("There was an error deleting the account", err);
-    return;
-  }
-
-  const data = await res.json();
-  // console.log("data: ", data)
-
-  const modifyAccounts = { ...accounts.value };
-
-  const accountsBelongingToAccessToken = modifyAccounts[accessToken];
-  if (accountsBelongingToAccessToken.length > 1) {
-    const deletionIdx = accountsBelongingToAccessToken.findIndex(
-      (account) => account.account_id === account_id
-    );
-    modifyAccounts[accessToken].splice(deletionIdx, 1);
-    accounts.value = modifyAccounts;
-  } else {
-    delete modifyAccounts[accessToken];
-    accounts.value = modifyAccounts;
+    accounts.value[accessToken] = data.accounts;
   }
 }
 
@@ -140,9 +96,37 @@ function RenderTotalBalance() {
   return h("div", `Total: $${sum}`);
 }
 
+function removeAccountHandler(accessToken: string, account: Account) {
+  removeAccount(account.account_id, account.persistent_account_id);
+  const modifyAccounts = { ...accounts.value };
+
+  const accountsBelongingToAccessToken = modifyAccounts[accessToken];
+  if (accountsBelongingToAccessToken.length > 1) {
+    const deletionIdx = accountsBelongingToAccessToken.findIndex(
+      (account) => account.account_id === account.account_id
+    );
+    modifyAccounts[accessToken].splice(deletionIdx, 1);
+    accounts.value = modifyAccounts;
+  } else {
+    delete modifyAccounts[accessToken];
+    accounts.value = modifyAccounts;
+  }
+}
+
 onBeforeMount(async () => {
-  await genAccessTokens();
-  await genLinkToken();
+  const accessTokensRes = await getAccessTokens();
+  if (accessTokensRes) {
+    accessTokens.value = accessTokensRes.access_tokens;
+  }
+
+  const linkTokenRes = await genLinkToken();
+  if (linkTokenRes) {
+    linkToken.value = linkTokenRes.link_token;
+  }
+
+  for (const accessToken of accessTokens.value) {
+    refreshBalance(accessToken);
+  }
 });
 
 watch(

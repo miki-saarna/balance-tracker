@@ -1,4 +1,4 @@
-import { h, onMounted, computed } from "vue";
+import { h, ref, onMounted, computed } from "vue";
 import type { Ref, VNode } from "vue";
 
 export type LinkTokenResponse = {
@@ -14,7 +14,7 @@ export type AccountsBalancesResponse = {
   accounts: any; // check Plaid docs for actual type
 };
 
-const generateLinkToken = async (): Promise<LinkTokenResponse | void> => {
+const genLinkToken = async (): Promise<LinkTokenResponse | void> => {
   let data: LinkTokenResponse;
   try {
     const response = await fetch(
@@ -24,11 +24,10 @@ const generateLinkToken = async (): Promise<LinkTokenResponse | void> => {
       }
     );
     data = await response.json();
+    return data;
   } catch (err) {
     console.error("Error:", err);
-    return;
   }
-  return data;
 };
 
 const Link = (props: LinkProps): VNode => {
@@ -85,15 +84,14 @@ const getAccountsBalances = async (
       },
       body: JSON.stringify({ access_token: accessToken }),
     });
+    const data: AccountsBalancesResponse = await res.json();
+    return data;
   } catch (err) {
     console.log(
       "There was an error retrieving accounts with associated balances",
       err
     );
-    return;
   }
-  const data: AccountsBalancesResponse = await res.json();
-  return data;
 };
 
-export { generateLinkToken, Link, getAccountsBalances };
+export { genLinkToken, Link, getAccountsBalances };
