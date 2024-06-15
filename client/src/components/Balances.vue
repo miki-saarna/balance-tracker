@@ -147,7 +147,7 @@ onBeforeMount(async () => {
       linkToken.value = linkTokenRes.link_token;
     }
   } catch (err) {
-    console.error("There was an error generate a link_token:", err);
+    console.error("There was an error generating a link_token:", err);
   }
 });
 </script>

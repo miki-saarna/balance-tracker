@@ -18,16 +18,13 @@ export type AccountsBalancesResponse = {
 const genLinkToken = async (): Promise<LinkTokenResponse | void> => {
   let data: LinkTokenResponse;
   try {
-    const response = await fetch(
-      "http://localhost:8000/api/create_link_token",
-      {
-        method: "POST",
-      }
-    );
-    data = await response.json();
+    const res = await fetch("http://localhost:8000/api/create_link_token", {
+      method: "POST",
+    });
+    data = await res.json();
     return data;
   } catch (err) {
-    console.error("Error:", err);
+    throw err;
   }
 };
 
