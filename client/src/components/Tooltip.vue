@@ -1,6 +1,6 @@
 <template>
   <slot :toggleTooltip="() => (isVisible = !isVisible)" :id="togglerId" />
-  <Teleport to="body">
+  <Teleport to="#tooltip-container">
     <Transition>
       <div
         v-if="isVisible"
