@@ -5,7 +5,7 @@
       <div
         v-if="isVisible"
         ref="tooltipRef"
-        class="fixed flex justify-center items-center p-2 border rounded translate-y-full -translate-x-full bg-white/50 backdrop-blur-[1px]"
+        class="fixed flex justify-center items-center p-2 border rounded translate-y-full -translate-x-full bg-white/75 backdrop-blur-[1px]"
       >
         <slot name="tooltip" />
       </div>
