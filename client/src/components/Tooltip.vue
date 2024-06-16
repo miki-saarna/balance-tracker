@@ -1,12 +1,15 @@
 <template>
   <slot :toggleTooltip="() => (isVisible = !isVisible)" :id="togglerId" />
-  <Teleport v-if="isVisible" to="body">
-    <div
-      ref="tooltipRef"
-      class="fixed flex justify-center items-center p-2 border rounded translate-y-full -translate-x-full bg-white/50 backdrop-blur-[1px]"
-    >
-      <slot name="tooltip" />
-    </div>
+  <Teleport to="body">
+    <Transition>
+      <div
+        v-if="isVisible"
+        ref="tooltipRef"
+        class="fixed flex justify-center items-center p-2 border rounded translate-y-full -translate-x-full bg-white/50 backdrop-blur-[1px]"
+      >
+        <slot name="tooltip" />
+      </div>
+    </Transition>
   </Teleport>
 </template>
 
@@ -38,3 +41,15 @@ watch(isVisible, (v) => {
   }
 });
 </script>
+
+<style>
+.v-enter-active,
+.v-leave-active {
+  transition: opacity 200ms ease-out;
+}
+
+.v-enter-from,
+.v-leave-to {
+  opacity: 0;
+}
+</style>
