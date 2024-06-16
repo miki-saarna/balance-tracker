@@ -1,9 +1,9 @@
 <template>
-  <slot :toggleTooltip="() => (isVisible = !isVisible)" :id="togglerId" />
-  <Teleport to="#tooltip-container">
+  <slot :toggleTooltip="toggleTooltip" :id="togglerId" />
+  <Teleport to="#tooltip-container" v-if="isVisibleTeleport">
     <Transition>
       <div
-        v-if="isVisible"
+        v-if="isVisibleTransition"
         ref="tooltipRef"
         class="fixed flex justify-center items-center p-2 border rounded translate-y-full -translate-x-full bg-white/75 backdrop-blur-[1px]"
       >
@@ -19,7 +19,8 @@ import type { Ref } from "vue";
 import { v4 as uuid } from "uuid";
 import { useTrackCoordinates } from "../composables/useCoordinatesTracker";
 
-const isVisible = ref(false);
+const isVisibleTeleport = ref(false);
+const isVisibleTransition = ref(false);
 const togglerId = ref("");
 const tooltipRef: Ref<HTMLElement | null> = ref(null);
 
@@ -27,7 +28,21 @@ onBeforeMount(() => {
   togglerId.value = uuid();
 });
 
-watch(isVisible, (v) => {
+const toggleTooltip = (): void => {
+  if (isVisibleTeleport.value) {
+    isVisibleTransition.value = false;
+    setTimeout(() => {
+      isVisibleTeleport.value = false;
+    });
+  } else {
+    isVisibleTeleport.value = true;
+    setTimeout(() => {
+      isVisibleTransition.value = true;
+    });
+  }
+};
+
+watch(isVisibleTransition, (v) => {
   if (v) {
     nextTick(() => {
       const foundTogglerEl = document.getElementById(togglerId.value);
