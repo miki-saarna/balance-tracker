@@ -21,8 +21,12 @@
     </div>
   </div>
 
-  <div v-if="renderTotalBalance" class="mt-4">
-    Total: ${{ renderTotalBalance }}
+  <div
+    v-if="renderTotalBalance"
+    class="mt-4 flex justify-between font-semibold"
+  >
+    <div>Total</div>
+    <div class="mr-9">${{ renderTotalBalance }}</div>
   </div>
 </template>
 
