@@ -42,7 +42,7 @@ watch(isVisible, (v) => {
 });
 </script>
 
-<style>
+<style scoped>
 .v-enter-active,
 .v-leave-active {
   transition: opacity 200ms ease-out;
