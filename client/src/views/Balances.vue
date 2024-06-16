@@ -7,7 +7,7 @@
   />
 
   <div class="mt-4 border-t border-gray-300">
-    <div v-for="[accessToken, accountsList] of accountsEntries">
+    <div v-for="[accessToken, accountsList] of Object.entries(accounts)">
       <div v-for="account of accountsList">
         <AccountCard
           :key="account.account_id"
@@ -54,10 +54,6 @@ const props = defineProps({
 const linkToken: Ref<string> = ref("");
 const accounts: AccountsByAccessToken = reactive({});
 const accessTokens: Ref<AccessTokensResponse["access_tokens"]> = ref([]);
-
-const accountsEntries: ComputedRef<[string, Account[]][]> = computed(() => {
-  return Object.entries(accounts);
-});
 
 const renderTotalBalance: ComputedRef<number | void> = computed(() => {
   const accountsList = Object.values(accounts);
