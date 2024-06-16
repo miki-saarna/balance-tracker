@@ -10,26 +10,20 @@
     <div class="self-start flex items-center">
       <div class="font-semibold">${{ balance }}</div>
       <Tooltip>
-        <template #default="{ toggleTooltip }">
-          <EllipsisVerticalIcon
-            v-slot="{ toggleTooltip }"
-            @click="toggleTooltip"
-            class="ml-4 w-5 cursor-pointer"
-          />
+        <template #default="{ toggleTooltip, id }">
+          <button @click="toggleTooltip" :id="id" class="ml-4 cursor-pointer">
+            <EllipsisVerticalIcon class="w-5" />
+          </button>
         </template>
         <template #tooltip>
-          <div
-            class="fixed flex justify-center items-center p-2 border rounded"
-          >
-            <button @click="$emit('refresh-balance')">
-              <ArrowPathIcon class="w-5" />
-            </button>
+          <button @click="$emit('refresh-balance')">
+            <ArrowPathIcon class="w-5" />
+          </button>
 
-            <!-- currently not saving `persistent_account_id` within the db -->
-            <button class="ml-4" @click="$emit('remove-account')">
-              <TrashIcon class="w-5 text-red-500" />
-            </button>
-          </div>
+          <!-- currently not saving `persistent_account_id` within the db -->
+          <button class="ml-4" @click="$emit('remove-account')">
+            <TrashIcon class="w-5 text-red-500" />
+          </button>
         </template>
       </Tooltip>
     </div>
