@@ -31,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onBeforeMount, toRef, computed } from "vue";
+import { ref, onBeforeMount, toRef, computed, reactive } from "vue";
 import type { Ref, ComputedRef } from "vue";
 import { getAccessTokens, removeAccount } from "../utils/db";
 import type { AccessTokensResponse } from "../utils/db";
@@ -39,12 +39,12 @@ import { Link, getAccountsBalances, genLinkToken } from "../utils/plaid_api";
 import type { AccountsBalancesResponse } from "../utils/plaid_api";
 import AccountCard from "../components/AccountCard.vue";
 
-type AccountsByAccessToken = {
-  [key: string]: any[]; // update with correct type from Plaid
-};
-
 type Account = {
   [key: string]: any;
+};
+
+type AccountsByAccessToken = {
+  [key: string]: Account[]; // update with correct type from Plaid
 };
 
 const props = defineProps({
@@ -52,15 +52,15 @@ const props = defineProps({
 });
 
 const linkToken: Ref<string> = ref("");
-const accounts: Ref<{ [key: string]: Account[] }> = ref({});
+const accounts: AccountsByAccessToken = reactive({});
 const accessTokens: Ref<AccessTokensResponse["access_tokens"]> = ref([]);
 
 const accountsEntries: ComputedRef<[string, Account[]][]> = computed(() => {
-  return Object.entries(accounts.value);
+  return Object.entries(accounts);
 });
 
 const renderTotalBalance: ComputedRef<number | void> = computed(() => {
-  const accountsList = Object.values(accounts.value);
+  const accountsList = Object.values(accounts);
   if (!accountsList.length) return;
   const sum = accountsList
     .filter((account) => !!account)
@@ -76,7 +76,7 @@ async function refreshBalance(accessToken: string): Promise<void> {
   );
 
   if (data) {
-    accounts.value[accessToken] = data.accounts;
+    accounts[accessToken] = data.accounts;
   }
 }
 
@@ -94,18 +94,14 @@ async function removeAccountHandler(
     return;
   }
 
-  const modifyAccounts = { ...accounts.value };
-
-  const accountsBelongingToAccessToken = modifyAccounts[accessToken];
+  const accountsBelongingToAccessToken = accounts[accessToken];
   if (accountsBelongingToAccessToken.length > 1) {
     const deletionIdx = accountsBelongingToAccessToken.findIndex(
       (account) => account.account_id === account.account_id
     );
-    modifyAccounts[accessToken].splice(deletionIdx, 1);
-    accounts.value = modifyAccounts;
+    accounts[accessToken].splice(deletionIdx, 1);
   } else {
-    delete modifyAccounts[accessToken];
-    accounts.value = modifyAccounts;
+    delete accounts[accessToken];
   }
 }
 
