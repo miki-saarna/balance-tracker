@@ -11,7 +11,7 @@
       <div class="font-semibold">${{ balance }}</div>
       <Tooltip>
         <template #default="{ toggleTooltip, id }">
-          <button @click="toggleTooltip" :id="id" class="ml-4 cursor-pointer">
+          <button @click="toggleTooltip" :id="id" class="ml-4">
             <EllipsisVerticalIcon class="w-5" />
           </button>
         </template>
