@@ -20,8 +20,8 @@ const getAccessTokens = async (): Promise<AccessTokensResponse | void> => {
 };
 
 async function removeAccount(
-  account_id: string,
-  persistent_id: string
+  account_id: string
+  // persistent_id: string
 ): Promise<void> {
   // 2nd parameter necessary?
 

@@ -164,7 +164,10 @@ async function removeAccountHandler(
   account: Account
 ): Promise<void> {
   try {
-    await removeAccount(account.account_id, account.persistent_account_id);
+    await removeAccount(
+      account.account_id
+      // account.persistent_account_id
+    );
   } catch (err) {
     console.log(
       `There was an error trying to remove the account with ID ${account.account_id}:`,
