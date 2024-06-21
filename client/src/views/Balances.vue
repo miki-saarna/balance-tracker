@@ -65,10 +65,6 @@ type AccountsByAccessToken = {
   [key: string]: Account[]; // update with correct type from Plaid
 };
 
-const props = defineProps({
-  msg: String,
-});
-
 const linkToken: Ref<string> = ref("");
 const accounts: AccountsByAccessToken = reactive({});
 const accessTokens: Ref<AccessTokensResponse["access_tokens"]> = ref([]);
